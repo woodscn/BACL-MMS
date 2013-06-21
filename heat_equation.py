@@ -95,56 +95,25 @@ class Test2MultiClass(object):
                 (self.t,self.t_i,self.t_i_plus_1),
                 (self.xi,self.x0+(i-1)*self.dx,self.x0+(i)*self.dx),
                 (self.eta,self.y0+(j-1)*self.dy,self.y0+(j)*self.dy),
-                (self.zeta,self.z_i,self.z_i_plus_1)) for j in self.y_ind_array]
+                (self.zeta,self.z_i,self.z_i_plus_1))[0] for j in self.y_ind_array]
 
 def test2():
-#    t = sympy.Symbol('t')
-#    xi = sympy.Symbol('xi')
-#    eta = sympy.Symbol('eta')
-#    zeta = sympy.Symbol('zeta')
-#    Ax = 1.5
-#    By = .37
-#    nx = 10
-#    dx = 1./nx
-#    dy, dz, dt = dx, dx, dx
-#    ny, nz, nt = nx, 1, 1
-#    x0, y0, z0, t0 = 0., 0., 0., 0.
-#    t_i, t_i_plus_1 = t0, t0+dt
-#    z_i, z_i_plus_1 = z0, z0+dz
-#    cos_sol = {}
-#    cos_sol["solution"] = [sympy.cos(Ax*xi)*sympy.cos(By*eta)]
-#    cos_sol["discontinuities"] = []
-#    int_src_array = numpy.zeros([nx+2,ny+2,nz+2,nt+2])
-#    x_array = 0*int_src_array
-#    y_array = 0*int_src_array
-#    z_array = 0*int_src_array
-#    t_array = 0*int_src_array
-#    
-#    for n in range(nt+2):# It's better to avoid the endpoints with gradient
-#        for k in range(nz+2):
-#            for j in range(ny+2):
-#                print "j = ", j, "of ",ny+2
-#                y_i, y_i_plus_1 = y0 + (j-1)*dy, y0+(j)*dy
-#                for i in range(nx+2):
-#                    x_i, x_i_plus_1 = x0 + (i-1)*dx, x0 + (i)*dx
-#                    int_src_array[i,j,k,n] = manufactured.int_eqn_sum(
-#                        HeatEquation(),cos_sol,
-#                        (t,t_i,t_i_plus_1),(xi,x_i,x_i_plus_1),
-#                        (eta,y_i,y_i_plus_1),(zeta,z_i,z_i_plus_1))
-#                    x_array[i,j,k,n] = x_i_plus_1
-#                    y_array[i,j,k,n] = y_i_plus_1
-#                    z_array[i,j,k,n] = z_i_plus_1
-#                    t_array[i,j,k,n] = t_i_plus_1
     p = multiprocessing.Pool()
-    p.map(test2_multi_func,range(Test2MultiClass.nx+2))
-    import pdb;pdb.set_trace()
-#    int_src_array = numpy.array(int_src_array).flatten()
-    x_array = numpy.array(x_array)
-    src_array = numpy.gradient(numpy.cumsum(
-            int_src_array[:,1:-1,1,1],0),dx,dy)/(dz*dt)
-    cos_sol_array = Ax**2*scipy.cos(Ax*x_array)
+    dx = 1./Test2MultiClass.nx
+    dy, dz, dt = dx, dx, dx
+    int_src_array = numpy.array(p.map(test2_multi_func,range(Test2MultiClass.nx+2)))
+    src_array = numpy.gradient(numpy.gradient(
+            numpy.cumsum(numpy.cumsum(int_src_array,axis=0),axis=1)
+            ,dx)[0],dy)[1][1:-1,1:-1]/(dz*dt)
+    xgrid = 0*src_array
+    for i in range(src_array.shape[0]):
+        xgrid[i,:] = (1.-0.)/Test2MultiClass.nx*i
+    ygrid = 0*src_array
+    for j in range(src_array.shape[1]):
+        ygrid[:,j] = (1.-0.)/Test2MultiClass.nx*j
+    cos_sol_array = scipy.cos(1.5*xgrid)*scipy.cos(.37*ygrid)
     print "got this far"
-    return x_array[1:-1],(abs(src_array-cos_sol_array)/abs(cos_sol_array))[1:-1]
+    return xgrid,ygrid,(abs(src_array-cos_sol_array)/abs(cos_sol_array))
 
 if __name__=="__main__":
 #    out = test1()
@@ -152,4 +121,5 @@ if __name__=="__main__":
 #    plt.title("1-D, steady-state heat equation, relative error")
 #    plt.show()
     out = test2()
+    import pdb;pdb.set_trace()
 
