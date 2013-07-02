@@ -1,10 +1,17 @@
 import sympy
 from sympy.utilities.lambdify import lambdify
+from sympy import sin, cos
 
 from base_equation import SympyEquation
 
 
+
+
 Zero = sympy.singleton.S.Zero
+t = sympy.Symbol('t')
+x = sympy.Symbol('x')
+y = sympy.Symbol('y')
+z = sympy.Symbol('z')
 
 class HeatEquation(SympyEquation):
     def setup(self,**kwargs):
@@ -20,33 +27,26 @@ class HeatEquation(SympyEquation):
                 [-self.k*sympy.diff(self.sol[0],self.vars_[3])])]
         self.source = sympy.Matrix([Zero])
 
-def MASA_solution_full(t_in,x_in,y_in,z_in,Ax,At,By,Bt,Cz,Ct,Dt,rho,cp,k):
-    t = sympy.Symbol('t')
-    x = sympy.Symbol('x')
-    y = sympy.Symbol('y')
-    z = sympy.Symbol('z')
-    heat_sol = {'vars':[t,x,y,z],'eqn_kwargs':{'rho':rho,'cp':cp,'k':k},
+def MASA_solution(Ax,At,By,Bt,Cz,Ct,Dt,rho,cp,k):
+    return {'vars':[t,x,y,z],'eqn_kwargs':{'rho':rho,'cp':cp,'k':k},
                 'sol':[sympy.cos(Ax*x+At*t)*sympy.cos(By*y+Bt*t)*
                        sympy.cos(Cz*z+Ct*t)*sympy.cos(Dt*t)],
                 'discontinuities':[]}
-    eqn = HeatEquation(heat_sol)
-    out = [lambdify(heat_sol['vars'],flux) for flux in eqn.fluxes]
-    out.append(lambdify(heat_sol['vars'],eqn.source))
-    return out
-    
-def MASA_solution(t,x,y,z):
-    kwargs ={
-        'Ax':1., 'At':0., 'By':0., 'Bt':0.,
-        'Cz':0., 'Ct':0., 'Dt':0.,
-        'rho':1.,'cp':1.,'k':1.
-        }
-    return MASA_solution_full(t,x,y,z,**kwargs)
+
+def MASA_source(Ax,At,By,Bt,Cz,Ct,Dt,rho,cp,k):
+    out = (
+        -(sin(Ax*x+At*t)*cos(By*y+Bt*t)*cos(Cz*z+Ct*t)*cos(Dt*t)*At+
+          cos(Ax*x+At*t)*sin(By*y+Bt*t)*cos(Cz*z+Ct*t)*cos(Dt*t)*Bt+
+          cos(Ax*x+At*t)*cos(By*y+Bt*t)*sin(Cz*z+Ct*t)*cos(Dt*t)*Ct+
+          cos(Ax*x+At*t)*cos(By*y+Bt*t)*cos(Cz*z+Ct*t)*sin(Dt*t)*Dt)*rho*cp+
+         (Ax**2+By**2+Cz**2)*cos(Ax*x+At*t)*cos(By*y+Bt*t)*cos(Cz*z+Ct*t)*
+         cos(Dt*t)*k
+         )
+
+def MASA_source_lambda(**kwargs):
+    return lambdify(MASA_source(**kwargs),(t,x,y,z))
 
 if __name__=="__main__":
-    t = sympy.Symbol('t')
-    x = sympy.Symbol('x')
-    y = sympy.Symbol('y')
-    z = sympy.Symbol('z')
     # These solutions taken from:
     # http://eqworld.ipmnet.ru/en/solutions/lpde/lpde101.pdf
     A, B, C, mu = 1,1,1,1

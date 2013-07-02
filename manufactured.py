@@ -1,7 +1,8 @@
+import sympy
 from scipy.misc import derivative
 from functools import partial
 
-from heat_equation import MASA_solution
+from heat_equation import MASA_solution, HeatEquation, MASA_source_lambda
 
 class Error(Exception):
     pass
@@ -39,5 +40,16 @@ def RD_test(t,x,y,z):
 
 if __name__=="__main__":
     print recursive_derivative(RD_test,(1,0,0,1))-2.0
-    args = 1.,1.,1.,1.
-    print recursive_derivative(MASA_solution,args)
+    t = sympy.Symbol('t')
+    x = sympy.Symbol('x')
+    y = sympy.Symbol('y')
+    z = sympy.Symbol('z')
+    args = (.01,.01,.01,.01)
+    kwargs = {
+        'Ax':1,'At':0,'By':0,'Bt':0,'Cz':0,'Ct':0,'Dt':0,'rho':1,'cp':1,'k':1}
+    eqn = HeatEquation(MASA_solution(**kwargs))
+    junk = recursive_derivative(
+        lambda x0,x1,x2,x3:eqn.balance_integrate(
+            ((t,0,x0),(x,0,x1),(y,0,x2),(z,0,x3))),(1,1,1,1),args)
+    import pdb;pdb.set_trace()
+    check = MASA_source_lambda(**kwargs)(*args)
