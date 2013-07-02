@@ -31,14 +31,15 @@ if __name__=="__main__":
     a = 1
     # These solutions taken from:
     # http://eqworld.ipmnet.ru/en/solutions/lpde/lpde101.pdf
-    sols = [A*x+B,
-            A*(x**2+2*a*t)+B,
-            A*(x**3+6*a*t*x)+B,
-            A*(x**4+12*a*t*x**2+12*a**2*t**2)+B,
-            A*sympy.exp(a*mu**2*t+mu*x)+B,
-            A*sympy.exp(a*mu**2*t-mu*x)+B,
-            A*sympy.exp(-a*mu**2*t)*sympy.cos(mu*x+B)+C,
-            A*sympy.exp(-mu*x)*sympy.cos(mu*x-2*a*mu**2*t+B)+C]
+    space = sympy.cos(sympy.pi*.25)*x-sympy.sin(sympy.pi*.25)*y
+    sols = [A*space+B,
+            A*(space**2+2*a*t)+B,
+            A*(space**3+6*a*t*space)+B,
+            A*(space**4+12*a*t*space**2+12*a**2*t**2)+B,
+            A*sympy.exp(a*mu**2*t+mu*space)+B,
+            A*sympy.exp(a*mu**2*t-mu*space)+B,
+            A*sympy.exp(-a*mu**2*t)*sympy.cos(mu*space+B)+C,
+            A*sympy.exp(-mu*space)*sympy.cos(mu*space-2*a*mu**2*t+B)+C]
     error = False
     for sol in sols:
         heat_sol = {'vars':[t,x,y,z],'eqn_kwargs':{'rho':1.,'cp':1.,'k':1.},
