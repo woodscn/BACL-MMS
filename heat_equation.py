@@ -32,6 +32,9 @@ if __name__=="__main__":
     # These solutions taken from:
     # http://eqworld.ipmnet.ru/en/solutions/lpde/lpde101.pdf
     space = sympy.cos(sympy.pi*.25)*x-sympy.sin(sympy.pi*.25)*y
+    phi, theta, psi = .1,.7,.25
+    space = (sympy.cos(theta)*x-sympy.cos(psi)*sympy.sin(theta)*y+
+             sympy.sin(theta)*sympy.sin(psi)*z)
     sols = [A*space+B,
             A*(space**2+2*a*t)+B,
             A*(space**3+6*a*t*space)+B,
@@ -46,6 +49,6 @@ if __name__=="__main__":
                     'sol':[sol],
                     'discontinuities':[]}
         eqn = HeatEquation(heat_sol)
+        out = eqn.balance_integrate(((t,0,1),(x,0,1),(y,0,1),(z,0,1)))
         print "sol = ", sol
-        print "balance integral = ", eqn.balance_integrate(
-            ((t,0,1),(x,0,1),(y,0,1),(z,0,1)))
+        print "balance integral = ", out
