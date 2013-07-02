@@ -11,7 +11,10 @@ def func_integral(integrand,**kwargs):
 def list_integral(integrands,**kwargs):
     multi_list_integral = partial(func_integral,**kwargs)
     pool = Pool()
-    return pool.map(multi_list_integral,integrands)
+    out = pool.map(multi_list_integral,integrands)
+    pool.close()
+    pool.join()
+    return out
 
 
 class IntegrableFunction(object):

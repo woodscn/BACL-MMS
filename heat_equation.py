@@ -27,5 +27,24 @@ if __name__=="__main__":
                 'sol':[sympy.cos(Ax*x+At*t)*sympy.cos(By*y+Bt*t)*
                        sympy.cos(Cz*z+Ct*t)*sympy.cos(Dt*t)],
                 'discontinuities':[]}
-    eqn = HeatEquation(heat_sol)
-    print eqn.balance_integrate(((t,0,1),(x,0,1),(y,0,1),(z,0,1)))
+    A, B, C, mu = 1,1,1,1
+    a = 1
+    # These solutions taken from:
+    # http://eqworld.ipmnet.ru/en/solutions/lpde/lpde101.pdf
+    sols = [A*x+B,
+            A*(x**2+2*a*t)+B,
+            A*(x**3+6*a*t*x)+B,
+            A*(x**4+12*a*t*x**2+12*a**2*t**2)+B,
+            A*sympy.exp(a*mu**2*t+mu*x)+B,
+            A*sympy.exp(a*mu**2*t-mu*x)+B,
+            A*sympy.exp(-a*mu**2*t)*sympy.cos(mu*x+B)+C,
+            A*sympy.exp(-mu*x)*sympy.cos(mu*x-2*a*mu**2*t+B)+C]
+    error = False
+    for sol in sols:
+        heat_sol = {'vars':[t,x,y,z],'eqn_kwargs':{'rho':1.,'cp':1.,'k':1.},
+                    'sol':[sol],
+                    'discontinuities':[]}
+        eqn = HeatEquation(heat_sol)
+        print "sol = ", sol
+        print "balance integral = ", eqn.balance_integrate(
+            ((t,0,1),(x,0,1),(y,0,1),(z,0,1)))
