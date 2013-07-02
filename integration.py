@@ -6,22 +6,13 @@ from functools import partial
 from multiprocessing import Pool
 
 def func_integral(integrand,**kwargs):
-    return IntegrableFunction(integrand,**kwargs).integrate()
+    return IntegrableFunction(integrand,**kwargs).integrate()[0]
 
 def list_integral(integrands,**kwargs):
     multi_list_integral = partial(func_integral,**kwargs)
     pool = Pool()
     return pool.map(multi_list_integral,integrands)
 
-def balance_integral(eqn_sol,sympy_ranges,sympy_discs=(),args={},
-                     integrator=None):
-    assert(len(eqn_sol)-1==len(sympy_ranges))
-    fluxes = eqn_sol[0:-1]
-    source = eqn_sol[-1]
-    flux_with_ind = [(ind,flux) for ind,flux in enumerate(fluxes)]
-    pool_flux = partial(flux_integral,ranges=sympy_ranges,discs=sympy_discs,
-                        args=args,integrator=integrator)
-    fluxes_out = map(pool_flux,flux_with_ind)
 
 class IntegrableFunction(object):
 

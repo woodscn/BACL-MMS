@@ -1,6 +1,8 @@
 import sympy
 from base_equation import SympyEquation
 
+Zero = sympy.singleton.S.Zero
+
 class HeatEquation(SympyEquation):
     def setup(self,**kwargs):
         self.rho = kwargs['rho']
@@ -10,7 +12,7 @@ class HeatEquation(SympyEquation):
                        [-self.k*sympy.diff(self.sol[0],self.vars_[1])],
                        [-self.k*sympy.diff(self.sol[0],self.vars_[2])],
                        [-self.k*sympy.diff(self.sol[0],self.vars_[3])]]
-        self.source = [0]
+        self.source = [Zero]
     
 if __name__=="__main__":
     Ax = 1. ; At = 0.
@@ -25,5 +27,5 @@ if __name__=="__main__":
                 'sol':[sympy.cos(Ax*x+At*t)*sympy.cos(By*y+Bt*t)*
                        sympy.cos(Cz*z+Ct*t)*sympy.cos(Dt*t)],
                 'discontinuities':[]}
-    junk = HeatEquation(heat_sol)
-    print junk()
+    eqn = HeatEquation(heat_sol)
+    print eqn.balance_integrate(((t,0,1),(x,0,1),(y,0,1),(z,0,1)))
