@@ -1,6 +1,8 @@
 import sympy
 import numpy as np
 from integration import list_integral
+from functools import partial
+from multiprocessing import Pool
 
 class SympyEquation(object):
     def __init__(self,sol):
@@ -31,13 +33,22 @@ class SympyEquation(object):
                 source,sympy_ranges=ranges,sympy_discontinuities=discs))
         return out
     def balance_integrate(self,ranges,discs=()):
+        # Since we're multiprocessing at the list level, we can't
+        # also multiprocess here. Pool workers can't spawn their
+        # own pools.
         out = np.zeros(len(self.sol))
-        for ind, range_ in enumerate(ranges):
-            out = out + self.flux_integrate(
-                flux=self.fluxes[ind],
-                area_ranges=[item for item in ranges if item is not range_],
-                point_range=range_,discs=discs)
-        out = out + self.source_integrate(self.source,ranges,discs)
+        partial_junk = partial(junk,obj=self,ranges=ranges,discs=discs)
+#        pool = Pool()
+        out_list = map(partial_junk,range(len(ranges)))
+#        pool.close()
+#        pool.join()
+        out = sum(out_list) + self.source_integrate(self.source,ranges,discs)
         return out
+def junk(ind,obj,ranges,discs):
+    return obj.flux_integrate(
+        obj.fluxes[ind],
+        area_ranges=[item for item in ranges if item is not ranges[ind]],
+        point_range=ranges[ind],discs=discs)
+
 if __name__=="__main__":
     pass
