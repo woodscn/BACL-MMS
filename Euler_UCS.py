@@ -9,7 +9,7 @@ xi = sympy.Symbol('xi')
 eta = sympy.Symbol('eta')
 zeta = sympy.Symbol('zeta')
 
-class Euler_UCS(sympy_equation):
+class Euler_UCS(SympyEquation):
     def setup(self,**kwargs):
         (self.pressure,self.density,                # 
          self.vels_x,self.vels_y,self.vels_z,       # u, v, w
@@ -106,7 +106,7 @@ class Euler_UCS(sympy_equation):
                 self.dx_dt,self.dy_dt,self.dz_dt])
     def MASA_solution_E():
         kwargs={'x0':1,
-                'xx':1,'ax':1,'fx',sympy.sin,
+                'xx':1,'ax':1,'fx':sympy.sin,
                 'xy':1,'ay':1,'fy':sympy.cos,
                 'xz':1,'az':1,'fz':sympy.cos,'L':2}
         return sympy.Matrix([MASA_sol_var(**kwargs) for var in range(5)])
@@ -118,4 +118,4 @@ class Euler_UCS(sympy_equation):
                 xz*fz(az*sympy.pi*zeta/L))
         
 if __name__ == "__main__":
-    Utest = (1,xi*t,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,0,0,0)
+    print MASA_solution_E()
