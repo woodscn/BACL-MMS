@@ -42,9 +42,10 @@ def MASA_source(Ax,At,By,Bt,Cz,Ct,Dt,rho,cp,k):
          (Ax**2+By**2+Cz**2)*cos(Ax*x+At*t)*cos(By*y+Bt*t)*cos(Cz*z+Ct*t)*
          cos(Dt*t)*k
          )
+    return out
 
 def MASA_source_lambda(**kwargs):
-    return lambdify(MASA_source(**kwargs),(t,x,y,z))
+    return lambdify((t,x,y,z),MASA_source(**kwargs))
 
 if __name__=="__main__":
     # These solutions taken from:

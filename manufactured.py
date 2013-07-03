@@ -45,11 +45,12 @@ if __name__=="__main__":
     y = sympy.Symbol('y')
     z = sympy.Symbol('z')
     args = (.01,.01,.01,.01)
+    dxes = [.001 for arg in args]
     kwargs = {
-        'Ax':1,'At':0,'By':0,'Bt':0,'Cz':0,'Ct':0,'Dt':0,'rho':1,'cp':1,'k':1}
+        'Ax':1,'At':1,'By':.5,'Bt':-.25,'Cz':.7,'Ct':0,'Dt':.1,'rho':1,'cp':1,'k':1}
     eqn = HeatEquation(MASA_solution(**kwargs))
-    junk = recursive_derivative(
-        lambda x0,x1,x2,x3:eqn.balance_integrate(
-            ((t,0,x0),(x,0,x1),(y,0,x2),(z,0,x3))),(1,1,1,1),args)
-    import pdb;pdb.set_trace()
-    check = MASA_source_lambda(**kwargs)(*args)
+    print abs(recursive_derivative(
+            lambda x0,x1,x2,x3:eqn.balance_integrate(
+                ((t,0,x0),(x,0,x1),(y,0,x2),(z,0,x3))),args,dxes,order=5) - 
+              MASA_source_lambda(**kwargs)(*args))
+
