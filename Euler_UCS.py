@@ -104,18 +104,18 @@ class Euler_UCS(SympyEquation):
     def source_func(self):
         return sympy.Matrix([0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
                 self.dx_dt,self.dy_dt,self.dz_dt])
-    def MASA_solution_E():
-        kwargs={'x0':1,
-                'xx':1,'ax':1,'fx':sympy.sin,
-                'xy':1,'ay':1,'fy':sympy.cos,
-                'xz':1,'az':1,'fz':sympy.cos,'L':2}
-        return sympy.Matrix([MASA_sol_var(**kwargs) for var in range(5)])
+def MASA_solution_E():
+    kwargs={'x0':1,
+            'xx':1,'ax':1,'fx':sympy.sin,
+            'xy':1,'ay':1,'fy':sympy.cos,
+            'xz':1,'az':1,'fz':sympy.cos,'L':2}
+    return sympy.Matrix([MASA_sol_var(**kwargs) for var in range(5)])
 
-    def MASA_sol_var(x0,xx,ax,fx,xy,ay,fy,xz,az,fz,L):
-        return (x0+
+def MASA_sol_var(x0,xx,ax,fx,xy,ay,fy,xz,az,fz,L):
+    return (x0+
                 xx*fx(ax*sympy.pi*xi/L)+
-                xy*fy(ay*sympy.pi*eta/L)+
-                xz*fz(az*sympy.pi*zeta/L))
-        
+            xy*fy(ay*sympy.pi*eta/L)+
+            xz*fz(az*sympy.pi*zeta/L))
+
 if __name__ == "__main__":
     print MASA_solution_E()
