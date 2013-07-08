@@ -17,7 +17,7 @@ class Euler_UCS(SympyEquation):
          self.dx_deta,self.dy_deta,self.dz_deta,    # L, M, N
          self.dx_dzeta,self.dy_dzeta,self.dz_dzeta, # P, Q, R
          self.dx_dt,self.dy_dt,self.dz_dt,          # U, V, W
-         self.x,self.y,self.z) = self.sol["sol"]    #
+         self.x,self.y,self.z) = self.sol
         self.gamma = sympy.Rational(7,5)
         self.jacobian = (
             self.dx_dxi*
@@ -67,7 +67,7 @@ class Euler_UCS(SympyEquation):
         self.grad_xi_vec = ((self.dxi_dx,self.dxi_dy,self.dxi_dz),
                             (self.deta_dx,self.deta_dy,self.deta_dz),
                             (self.dzeta_dx,self.dzeta_dy,self.dzeta_dz))
-        self.fluxes = [self.flux(n) for n in range(4)]
+        self.fluxes = [self.flux(n) for n in range(3)]
         self.source = self.source_func()
 #        out = (self.cons(),self.flux(0),self.flux(1),self.flux(2),self.source_func())
 #        return out
@@ -109,7 +109,10 @@ def MASA_solution_E():
             'xx':1,'ax':1,'fx':sympy.sin,
             'xy':1,'ay':1,'fy':sympy.cos,
             'xz':1,'az':1,'fz':sympy.cos,'L':2}
-    return sympy.Matrix([MASA_sol_var(**kwargs) for var in range(5)])
+    return {'vars':[t,xi,eta,zeta],'sol':sympy.Matrix(
+            [MASA_sol_var(**kwargs) for var in range(5)]+
+            [1,0,0,0,1,0,0,0,1,0,0,0,0,0,0]),'discontinuities':[],
+            'eqn_kwargs':{}}
 
 def MASA_sol_var(x0,xx,ax,fx,xy,ay,fy,xz,az,fz,L):
     return (x0+
@@ -118,4 +121,6 @@ def MASA_sol_var(x0,xx,ax,fx,xy,ay,fy,xz,az,fz,L):
             xz*fz(az*sympy.pi*zeta/L))
 
 if __name__ == "__main__":
-    print MASA_solution_E()
+    out = MASA_solution_E()
+    eqn = Euler_UCS(MASA_solution_E())
+    import pdb;pdb.set_trace()
