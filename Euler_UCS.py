@@ -67,7 +67,7 @@ class Euler_UCS(SympyEquation):
         self.grad_xi_vec = ((self.dxi_dx,self.dxi_dy,self.dxi_dz),
                             (self.deta_dx,self.deta_dy,self.deta_dz),
                             (self.dzeta_dx,self.dzeta_dy,self.dzeta_dz))
-        self.fluxes = [self.flux(n) for n in range(3)]
+        self.fluxes = [self.cons()]+[self.flux(n) for n in range(3)]
         self.source = self.source_func()
 #        out = (self.cons(),self.flux(0),self.flux(1),self.flux(2),self.source_func())
 #        return out
