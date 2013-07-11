@@ -1,5 +1,6 @@
 import sympy
 from sympy.utilities.lambdify import lambdify
+H = sympy.special.delta_functions.Heaviside
 
 from base_equation import SympyEquation
 
@@ -8,6 +9,16 @@ t = sympy.Symbol('t')
 xi = sympy.Symbol('xi')
 eta = sympy.Symbol('eta')
 zeta = sympy.Symbol('zeta')
+
+#def H(S):
+#    if S>0:
+#        out = 1.
+#    else:
+#        if S<0:
+#            out = 0.
+#        else:
+#            out = .5
+#    return out
 
 class Euler_UCS(SympyEquation):
     def setup(self,**kwargs):
@@ -104,6 +115,37 @@ class Euler_UCS(SympyEquation):
     def source_func(self):
         return sympy.Matrix([0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
                 self.dx_dt,self.dy_dt,self.dz_dt])
+
+def unsteady_Euler(case):
+    cases = {'simple':simple_case,
+             'two_shock':two_shock_case}
+    out = {'vars':[t,xi,eta,zeta],'eqn_kwargs':{}}
+    out.update(cases[case]())
+    return out
+
+def simple_case():
+    return {'sol':sympy.Matrix([1,1,1,0,0,1,0,0,0,1,0,0,0,1,0,0,0,0,0,0]),
+            'discontinuities':[]}
+
+def two_shock_case():
+    S = xi/t
+    phi, theta, psi = .1, .7, .25
+#    S = (sympy.cos(theta)*xi-sympy.cos(psi)*sympy.sin(theta)*eta+
+#         sympy.sin(theta)*sympy.sin(psi)*zeta)
+    speeds = [.789631,8.68975,12.2507]
+#    speeds = [.789631,8.68975,10.2507]
+    states = [sympy.Matrix([460.894,5.99924,19.5975]),
+              sympy.Matrix([1691.64,14.2823,8.68975]),
+              sympy.Matrix([1691.64,31.0426,8.68975]),
+              sympy.Matrix([46.0950,5.99242,-6.19633])]
+    base_state = [0,0,1,0,0,0,1,0,0,0,1,0,0,0,0,0,0]
+    out = {'sol':sympy.Matrix(list(H(speeds[0]-S)*states[0]+
+           H(speeds[1]-S)*(1-H(speeds[0]-S))*states[1]+
+           H(speeds[2]-S)*(1-H(speeds[1]-S))*states[2]+
+           (               1-H(speeds[2]-S))*states[3])+base_state),
+           'discontinuities':[S-speed for speed in speeds]}
+    return out
+
 def MASA_solution_E():
     kwargs={'x0':1,
             'xx':1,'ax':1,'fx':sympy.sin,

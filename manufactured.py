@@ -3,7 +3,7 @@ from scipy.misc import derivative
 from functools import partial
 
 from heat_equation import MASA_solution, HeatEquation, MASA_source_lambda
-from Euler_UCS import Euler_UCS, MASA_solution_E
+from Euler_UCS import Euler_UCS, MASA_solution_E, unsteady_Euler
 
 class Error(Exception):
     pass
@@ -40,7 +40,7 @@ def RD_test(t,x,y,z):
     return t**2*x*y*z
 
 if __name__=="__main__":
-    print recursive_derivative(RD_test,(1,0,0,1))-2.0
+#    print recursive_derivative(RD_test,(1,0,0,1))-2.0
     t = sympy.Symbol('t')
     x = sympy.Symbol('x')
     y = sympy.Symbol('y')
@@ -57,8 +57,8 @@ if __name__=="__main__":
 #            lambda x0,x1,x2,x3:eqn.balance_integrate(
 #                ((t,0,x0),(x,0,x1),(y,0,x2),(z,0,x3))),args,dxes,order=5) - 
 #              MASA_source_lambda(**kwargs)(*args))
-    eqn2 = Euler_UCS(MASA_solution_E())
+    eqn2 = Euler_UCS(unsteady_Euler('two_shock'))
     print eqn2.balance_integrate(
-                ((t,0,1),(xi,0,1),(eta,0,1),(zeta,0,1)))
+                ((t,0.99,1.01),(xi,0,1),(eta,0,1),(zeta,0,1)))
               
 
