@@ -167,9 +167,15 @@ class Integrand(object):
         return out
 
 if __name__=="__main__":
+    H = sympy.special.delta_functions.Heaviside
+    phi, theta, psi = .1, .7, .25
     t=sympy.Symbol('t')
     x=sympy.Symbol('x')
-    integrands = [t*x-t**2,t**3-x*(t-1)]
-    test = {'sympy_ranges':((t,0,1),(x,-1,0))}
-    print list_integral(integrands,**test)
+    y=sympy.Symbol('y')
+    z=sympy.Symbol('z')
+    S = x/t
+#    S = (sympy.cos(theta)*xi-sympy.cos(psi)*sympy.sin(theta)*eta+
+#         sympy.sin(theta)*sympy.sin(psi)*zeta)
+    integrands = [(.5+x**3*t**(-2)-x*y*z)+H(.5-S)]
+    test = {'sympy_ranges':((t,.8,1),(x,-1,1),(y,-1,1),(z,-1,1)),'sympy_discontinuities':[.5-S]}
     print IntegrableFunction(integrands[0],**test).integrate()
