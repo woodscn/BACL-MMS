@@ -1,15 +1,18 @@
 import sympy
 from sympy.utilities.lambdify import lambdify
+from sympy.core.cache import clear_cache
 from scipy.integrate import nquad
 import numpy
 from functools import partial
 from multiprocessing import Pool
 
 def func_integral(integrand,**kwargs):
-    return IntegrableFunction(integrand,**kwargs).integrate()[0]
+    out = IntegrableFunction(integrand,**kwargs).integrate()[0]
+    return out
 
 def list_integral(integrands,**kwargs):
     multi_list_integral = partial(func_integral,**kwargs)
+#    out = map(multi_list_integral,integrands)
     pool = Pool()
     out = pool.map(multi_list_integral,integrands)
     pool.close()
@@ -135,14 +138,16 @@ class DiscFunction(object):
         self.disc_symbolic = solved.subs(args)
         self.other_sympy_vars = list(sympy_variables)
         self.lambdified = lambdify(self.other_sympy_vars,self.disc_symbolic)
+        clear_cache()
         return None
     def __call__(self,*args):
         if len(args) != len(self.other_sympy_vars):
             print 'args = ',args
             print 'expected args = ',self.other_sympy_vars
-            import pdb;pdb.set_trace()
             raise Error('Error in DiscFunction call! Invalid args list!')
-        return self.lambdified(*args)
+        out = self.lambdified(*args)
+        clear_cache()
+        return out
 
 
 class Integrand(object):
@@ -150,13 +155,16 @@ class Integrand(object):
         self.sympy_function = sympy_function.subs(args)
         self.sympy_variables = sympy_variables
         self.lambdified = lambdify(self.sympy_variables,self.sympy_function)
+        clear_cache()
         return None
     def __call__(self,*args):
         if len(args) != len(self.sympy_variables):
             print 'args = ',args
             print 'sympy_vars = ',self.sympy_variables
             raise Error('invalid argument list given in call to Integrand!')
-        return self.lambdified(*args)
+        out = self.lambdified(*args)
+        clear_cache()
+        return out
 
 if __name__=="__main__":
     t=sympy.Symbol('t')

@@ -58,7 +58,9 @@ if __name__=="__main__":
 #                ((t,0,x0),(x,0,x1),(y,0,x2),(z,0,x3))),args,dxes,order=5) - 
 #              MASA_source_lambda(**kwargs)(*args))
     eqn2 = Euler_UCS(unsteady_Euler('two_shock'))
+    print "got this far"
     print eqn2.balance_integrate(
                 ((t,0.99,1.01),(xi,0,1),(eta,0,1),(zeta,0,1)))
+    print "done"
               
 

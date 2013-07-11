@@ -39,10 +39,18 @@ class SympyEquation(object):
         out = np.zeros(len(self.sol))
         partial_junk = partial(junk,obj=self,ranges=ranges,discs=discs)
 #        pool = Pool()
-        out_list = map(partial_junk,range(len(ranges)))
+        out_list = []
+        for ind in range(len(ranges)):
+            temp = partial_junk(ind)
+            print "Temp is done"
+            out_list.append(temp)
+#        out_list = map(partial_junk,range(len(ranges)))
 #        pool.close()
 #        pool.join()
-        out = sum(out_list) + self.source_integrate(self.source,ranges,discs)
+        print "done with flux integrals"
+        out = out_list + [self.source_integrate(self.source,ranges,discs)]
+        print "done with source integral"
+        out = sum(out)
         return out
 def junk(ind,obj,ranges,discs):
     return obj.flux_integrate(
