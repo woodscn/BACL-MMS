@@ -139,10 +139,15 @@ def two_shock_case():
               sympy.Matrix([1691.64,31.0426,8.68975]),
               sympy.Matrix([46.0950,5.99242,-6.19633])]
     base_state = [0,0,1,0,0,0,1,0,0,0,1,0,0,0,0,0,0]
-    out = {'sol':sympy.Matrix(list(H(speeds[0]-S)*states[0]+
-           H(speeds[1]-S)*(1-H(speeds[0]-S))*states[1]+
-           H(speeds[2]-S)*(1-H(speeds[1]-S))*states[2]+
-           (               1-H(speeds[2]-S))*states[3])+base_state),
+#    out = {'sol':sympy.Matrix(list(H(speeds[0]-S)*states[0]+
+#           H(speeds[1]-S)*(1-H(speeds[0]-S))*states[1]+
+#           H(speeds[2]-S)*(1-H(speeds[1]-S))*states[2]+
+#           (               1-H(speeds[2]-S))*states[3])+base_state),
+    out = {'sol':sympy.Matrix(list(states[0]+
+                                   H(S-speeds[0])*(states[1]-states[0])+
+                                   H(S-speeds[1])*(states[2]-states[1])+
+                                   H(S-speeds[2])*(states[3]-states[2]))+
+                              base_states),
            'discontinuities':[S-speed for speed in speeds]}
     return out
 

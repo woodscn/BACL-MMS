@@ -177,5 +177,6 @@ if __name__=="__main__":
 #    S = (sympy.cos(theta)*xi-sympy.cos(psi)*sympy.sin(theta)*eta+
 #         sympy.sin(theta)*sympy.sin(psi)*zeta)
     integrands = [(.5+x**3*t**(-2)-x*y*z)+H(.5-S)]
-    test = {'sympy_ranges':((t,.8,1),(x,-1,1),(y,-1,1),(z,-1,1)),'sympy_discontinuities':[.5-S]}
+    test = {'sympy_ranges':((t,.8,1),(x,-1,1),(y,-1,1),(z,-1,1)),
+            'sympy_discontinuities':[.5-S]}
     print IntegrableFunction(integrands[0],**test).integrate()
