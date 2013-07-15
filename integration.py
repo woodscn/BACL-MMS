@@ -7,16 +7,18 @@ from functools import partial
 from multiprocessing import Pool
 
 def func_integral(integrand,**kwargs):
+    import pdb;pdb.set_trace()
     out = IntegrableFunction(integrand,**kwargs).integrate()[0]
     return out
 
 def list_integral(integrands,**kwargs):
     multi_list_integral = partial(func_integral,**kwargs)
-#    out = map(multi_list_integral,integrands)
+    out = map(multi_list_integral,integrands)
     pool = Pool()
-    out = pool.map(multi_list_integral,integrands)
+#    out = pool.map(multi_list_integral,integrands)
     pool.close()
     pool.join()
+    import pdb;pdb.set_trace()
     return out
 
 
@@ -86,6 +88,7 @@ class IntegrableFunction(object):
                 self.opts.append(OptionsDict(points))
             else:
                 self.opts.append({})
+        return None
     
     def quad_integrate(self):
         return nquad(self.function,self.ranges,opts=self.opts)
@@ -173,10 +176,10 @@ if __name__=="__main__":
     x=sympy.Symbol('x')
     y=sympy.Symbol('y')
     z=sympy.Symbol('z')
-    S = x/t
+    S = x
 #    S = (sympy.cos(theta)*xi-sympy.cos(psi)*sympy.sin(theta)*eta+
 #         sympy.sin(theta)*sympy.sin(psi)*zeta)
-    integrands = [(.5+x**3*t**(-2)-x*y*z)+H(.5-S)]
-    test = {'sympy_ranges':((t,.8,1),(x,-1,1),(y,-1,1),(z,-1,1)),
-            'sympy_discontinuities':[.5-S]}
+    integrands = [(.5+x**3*t**(-2)-x*y*z)+H(.5-S)+H(.25-S)]
+    test = {'sympy_ranges':((t,.8,1),(x,-1,1),(y,-1,1)),
+            'sympy_discontinuities':[.5-S,.25-S],'args':{z:1}}
     print IntegrableFunction(integrands[0],**test).integrate()

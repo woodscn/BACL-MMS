@@ -8,6 +8,7 @@ class SympyEquation(object):
     def __init__(self,sol):
         self.vars_ = sol['vars']
         self.sol = sol['sol']
+        self.discontinuities = sol['discontinuities']
         self.setup(**sol['eqn_kwargs'])
     def __call__(self):
         return self.fluxes+[self.source]
@@ -37,11 +38,12 @@ class SympyEquation(object):
         # also multiprocess here. Pool workers can't spawn their
         # own pools.
         out = np.zeros(len(self.sol))
-        partial_junk = partial(junk,obj=self,ranges=ranges,discs=discs)
+#        partial_junk = partial(junk,obj=self,ranges=ranges,
+#                               discs=self.discontinuities)
 #        pool = Pool()
         out_list = []
-        for ind in range(len(ranges)):
-            temp = partial_junk(ind)
+        for ind in [1,2,3]:#range(len(ranges)):
+            temp = junk(ind,self,ranges,self.discontinuities)
             print "Temp is done"
             out_list.append(temp)
 #        out_list = map(partial_junk,range(len(ranges)))

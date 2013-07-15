@@ -60,7 +60,7 @@ if __name__=="__main__":
     eqn2 = Euler_UCS(unsteady_Euler('two_shock'))
     print "got this far"
     print eqn2.balance_integrate(
-                ((t,0.99,1.01),(xi,0,1),(eta,0,1),(zeta,0,1)))
+                ((t,0.99,1.01),(xi,0.,1.),(eta,0.,1.),(zeta,0.,1.)))
     print "done"
               
 

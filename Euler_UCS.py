@@ -147,7 +147,7 @@ def two_shock_case():
                                    H(S-speeds[0])*(states[1]-states[0])+
                                    H(S-speeds[1])*(states[2]-states[1])+
                                    H(S-speeds[2])*(states[3]-states[2]))+
-                              base_states),
+                              base_state),
            'discontinuities':[S-speed for speed in speeds]}
     return out
 
