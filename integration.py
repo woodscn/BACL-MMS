@@ -77,7 +77,7 @@ class IntegrableFunction(object):
         for var in self.int_variables:
             points = []
             int_variables_init.remove(var)
-            for disc in discs:
+            for disc in discs[:]:
                 solved = sympy.solve(disc,var)
                 if len(solved) > 0: # does disc depend on var?
                     for solve in solved: # add disc to points.
@@ -91,6 +91,7 @@ class IntegrableFunction(object):
         return None
     
     def quad_integrate(self):
+        import pdb;pdb.set_trace()
         return nquad(self.function,self.ranges,opts=self.opts)
 
     def mc_integrate(self):
@@ -176,10 +177,10 @@ if __name__=="__main__":
     x=sympy.Symbol('x')
     y=sympy.Symbol('y')
     z=sympy.Symbol('z')
-    S = 1/x
+    S = 1./t
 #    S = (sympy.cos(theta)*xi-sympy.cos(psi)*sympy.sin(theta)*eta+
 #         sympy.sin(theta)*sympy.sin(psi)*zeta)
     integrands = [(.5+x**3*t**(-2)-x*y*z)+H(.5-S)+H(.25-S)]
-    test = {'sympy_ranges':((t,.8,1),(x,-1,1),(y,-1,1)),
+    test = {'sympy_ranges':((t,.8,1.),(x,-1.,1.),(y,-1.,1.)),
             'sympy_discontinuities':[.5-S,.25-S],'args':{z:1}}
     print IntegrableFunction(integrands[0],**test).integrate()
