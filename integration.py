@@ -176,7 +176,7 @@ if __name__=="__main__":
     x=sympy.Symbol('x')
     y=sympy.Symbol('y')
     z=sympy.Symbol('z')
-    S = x
+    S = 1/x
 #    S = (sympy.cos(theta)*xi-sympy.cos(psi)*sympy.sin(theta)*eta+
 #         sympy.sin(theta)*sympy.sin(psi)*zeta)
     integrands = [(.5+x**3*t**(-2)-x*y*z)+H(.5-S)+H(.25-S)]
