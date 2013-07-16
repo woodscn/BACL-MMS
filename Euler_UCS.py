@@ -118,7 +118,8 @@ class Euler_UCS(SympyEquation):
 
 def unsteady_Euler(case):
     cases = {'simple':simple_case,
-             'two_shock':two_shock_case}
+             'two_shock':two_shock_case,
+             'one_shock':one_shock_case}
     out = {'vars':[t,xi,eta,zeta],'eqn_kwargs':{}}
     out.update(cases[case]())
     return out
@@ -126,6 +127,18 @@ def unsteady_Euler(case):
 def simple_case():
     return {'sol':sympy.Matrix([1,1,1,0,0,1,0,0,0,1,0,0,0,1,0,0,0,0,0,0]),
             'discontinuities':[]}
+
+def one_shock_case():
+    S = xi/t
+    speeds = [.789631]
+    states = [sympy.Matrix([460.894,5.99924,19.5975]),
+              sympy.Matrix([1691.64,14.2823,8.68975])]
+    base_state = [0,0,1,0,0,0,1,0,0,0,1,0,0,0,0,0,0]
+    out = {'sol':sympy.Matrix(list(states[0]+
+                                   H(S-speeds[0])*(states[1]-states[0]))+
+                              base_state),
+           'discontinuities':[S-speed for speed in speeds]}
+    return out
 
 def two_shock_case():
     S = xi/t

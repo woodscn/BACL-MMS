@@ -7,7 +7,6 @@ from functools import partial
 from multiprocessing import Pool
 
 def func_integral(integrand,**kwargs):
-    import pdb;pdb.set_trace()
     out = IntegrableFunction(integrand,**kwargs).integrate()[0]
     return out
 
@@ -18,7 +17,6 @@ def list_integral(integrands,**kwargs):
 #    out = pool.map(multi_list_integral,integrands)
     pool.close()
     pool.join()
-    import pdb;pdb.set_trace()
     return out
 
 
