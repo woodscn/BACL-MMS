@@ -9,6 +9,7 @@ t = sympy.Symbol('t')
 xi = sympy.Symbol('xi')
 eta = sympy.Symbol('eta')
 zeta = sympy.Symbol('zeta')
+gamma = sympy.Rational(7,5)
 
 #def H(S):
 #    if S>0:
@@ -29,7 +30,7 @@ class Euler_UCS(SympyEquation):
          self.dx_dzeta,self.dy_dzeta,self.dz_dzeta, # P, Q, R
          self.dx_dt,self.dy_dt,self.dz_dt,          # U, V, W
          self.x,self.y,self.z) = self.sol
-        self.gamma = sympy.Rational(7,5)
+        self.gamma = gamma
         self.jacobian = (
             self.dx_dxi*
             (self.dy_deta*self.dz_dzeta-self.dz_deta*self.dy_dzeta) + 
@@ -119,7 +120,8 @@ class Euler_UCS(SympyEquation):
 def unsteady_Euler(case):
     cases = {'simple':simple_case,
              'two_shock':two_shock_case,
-             'one_shock':one_shock_case}
+#             'one_shock':one_shock_case,
+             'normal':normal_case}
     out = {'vars':[t,xi,eta,zeta],'eqn_kwargs':{}}
     out.update(cases[case]())
     return out
@@ -128,12 +130,24 @@ def simple_case():
     return {'sol':sympy.Matrix([1,1,1,0,0,1,0,0,0,1,0,0,0,1,0,0,0,0,0,0]),
             'discontinuities':[]}
 
-def one_shock_case():
-    S = xi/t
-    speeds = [.789631]
-    states = [sympy.Matrix([460.894,5.99924,19.5975]),
-              sympy.Matrix([1691.64,14.2823,8.68975])]
-    base_state = [0,0,1,0,0,0,1,0,0,0,1,0,0,0,0,0,0]
+def normal_case():
+    theta = .1
+    S = (sympy.cos(theta)*xi+sympy.sin(theta)*eta)/t
+    shock_speed = 1.
+    p1 = 1.
+    d1 = 1.
+    umag1 = 3
+    M1rel = (umag1-shock_speed)/(gamma*p1/d1)**(.5)
+    p2 = ((2.*gamma*M1rel**2-(gamma-1))/(gamma+1))*p1
+    d2 = ((gamma+1.)*M1rel**2/((gamma-1.)*M1rel**2+2.))*d1
+    umag2 = (1-d1/d2)*shock_speed+umag1*d1/d2
+    u1 = umag1*sympy.cos(theta)
+    v1 = umag1*sympy.sin(theta)
+    u2 = umag2*sympy.cos(theta)
+    v2 = umag2*sympy.sin(theta)
+    speeds = [shock_speed]
+    states = [sympy.Matrix([p1,d1,u1,v1]),sympy.Matrix([p2,d2,u2,v2])]
+    base_state = [0,1,0,0,0,1,0,0,0,1,0,0,0,0,0,0]
     out = {'sol':sympy.Matrix(list(states[0]+
                                    H(S-speeds[0])*(states[1]-states[0]))+
                               base_state),
@@ -144,9 +158,8 @@ def two_shock_case():
     S = xi/t
     phi, theta, psi = .1, .7, .25
 #    S = (sympy.cos(theta)*xi-sympy.cos(psi)*sympy.sin(theta)*eta+
-#         sympy.sin(theta)*sympy.sin(psi)*zeta)
+#         sympy.sin(theta)*sympy.sin(psi)*zeta)/t
     speeds = [.789631,8.68975,12.2507]
-#    speeds = [.789631,8.68975,10.2507]
     states = [sympy.Matrix([460.894,5.99924,19.5975]),
               sympy.Matrix([1691.64,14.2823,8.68975]),
               sympy.Matrix([1691.64,31.0426,8.68975]),
@@ -156,11 +169,14 @@ def two_shock_case():
 #           H(speeds[1]-S)*(1-H(speeds[0]-S))*states[1]+
 #           H(speeds[2]-S)*(1-H(speeds[1]-S))*states[2]+
 #           (               1-H(speeds[2]-S))*states[3])+base_state),
-    out = {'sol':sympy.Matrix(list(states[0]+
-                                   H(S-speeds[0])*(states[1]-states[0])+
-                                   H(S-speeds[1])*(states[2]-states[1])+
-                                   H(S-speeds[2])*(states[3]-states[2]))+
-                              base_state),
+    out = {'sol':sympy.Matrix(
+            list(
+                (1-H(S-speeds[0]))*states[0]+
+                H(S-speeds[0])*states[1])+base_state),
+#                (1-H(S-speeds[0]))*states[0]+
+#                H(S-speeds[0])*(1-H(S-speeds[1]))*states[1]+
+#                H(S-speeds[1])*(1-H(S-speeds[2]))*states[2]+
+#                H(S-speeds[2])*states[3])+base_state),
            'discontinuities':[S-speed for speed in speeds]}
     return out
 

@@ -38,17 +38,17 @@ class SympyEquation(object):
         # also multiprocess here. Pool workers can't spawn their
         # own pools.
         out = np.zeros(len(self.sol))
-#        partial_junk = partial(junk,obj=self,ranges=ranges,
-#                               discs=self.discontinuities)
-#        pool = Pool()
+        partial_junk = partial(junk,obj=self,ranges=ranges,
+                               discs=self.discontinuities)
+        pool = Pool()
         out_list = []
-        for ind in [1,2,3]:#range(len(ranges)):
-            temp = junk(ind,self,ranges,self.discontinuities)
-            print "Temp is done"
-            out_list.append(temp)
-#        out_list = map(partial_junk,range(len(ranges)))
-#        pool.close()
-#        pool.join()
+#        for ind in range(len(ranges)):
+#            temp = junk(ind,self,ranges,self.discontinuities)
+#            print "Temp is done"
+#            out_list.append(temp)
+        out_list = pool.map(partial_junk,range(len(ranges)))
+        pool.close()
+        pool.join()
         print "done with flux integrals"
         out = out_list + [self.source_integrate(self.source,ranges,discs)]
         print "done with source integral"

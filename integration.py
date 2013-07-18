@@ -13,10 +13,10 @@ def func_integral(integrand,**kwargs):
 def list_integral(integrands,**kwargs):
     multi_list_integral = partial(func_integral,**kwargs)
     out = map(multi_list_integral,integrands)
-    pool = Pool()
+#    pool = Pool()
 #    out = pool.map(multi_list_integral,integrands)
-    pool.close()
-    pool.join()
+#    pool.close()
+#    pool.join()
     return out
 
 
