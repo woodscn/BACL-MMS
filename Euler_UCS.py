@@ -131,16 +131,17 @@ def simple_case():
             'discontinuities':[]}
 
 def normal_case():
-    theta = .1
+    theta = 0.
     S = (sympy.cos(theta)*xi+sympy.sin(theta)*eta)/t
-    shock_speed = 1.
-    p1 = 1.
-    d1 = 1.
-    umag1 = 3
+    shock_speed = .78931
+    p1 = 460.894
+    d1 = 5.99924
+    umag1 = 19.5975
     M1rel = (umag1-shock_speed)/(gamma*p1/d1)**(.5)
     p2 = ((2.*gamma*M1rel**2-(gamma-1))/(gamma+1))*p1
     d2 = ((gamma+1.)*M1rel**2/((gamma-1.)*M1rel**2+2.))*d1
     umag2 = (1-d1/d2)*shock_speed+umag1*d1/d2
+    print "p2,d2,u2 = ",p2,d2,umag2
     u1 = umag1*sympy.cos(theta)
     v1 = umag1*sympy.sin(theta)
     u2 = umag2*sympy.cos(theta)
@@ -170,13 +171,11 @@ def two_shock_case():
 #           H(speeds[2]-S)*(1-H(speeds[1]-S))*states[2]+
 #           (               1-H(speeds[2]-S))*states[3])+base_state),
     out = {'sol':sympy.Matrix(
-            list(
-                (1-H(S-speeds[0]))*states[0]+
-                H(S-speeds[0])*states[1])+base_state),
-#                (1-H(S-speeds[0]))*states[0]+
-#                H(S-speeds[0])*(1-H(S-speeds[1]))*states[1]+
-#                H(S-speeds[1])*(1-H(S-speeds[2]))*states[2]+
-#                H(S-speeds[2])*states[3])+base_state),
+            list(states[0]+
+                 H(S-speeds[0])*(states[1]-states[0])+
+                 H(S-speeds[1])*(states[2]-states[1])+
+                 H(S-speeds[2])*(states[3]-states[2]))+
+            base_state),
            'discontinuities':[S-speed for speed in speeds]}
     return out
 

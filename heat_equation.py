@@ -108,15 +108,17 @@ if __name__=="__main__":
         sol = MASA_solution(*(vals[n,:]),cp=1.,k=1.)
         source = lambdify((t,x,y,z),MASA_source(*vals[n,:],cp=1.,k=1.))
         args = (.01,.01,.01,.01)
-        dxes = [.001 for arg in args]
-        abs(recursive_derivative(
-                lambda x0,x1,x2,x3:HeatEquation(sol).balance_integrate(ranges),
-                args,dxes,order=3)-source(args))
+        dxes = [1. for arg in args]
+        out.append(
+            abs(recursive_derivative(
+                    lambda x0,x1,x2,x3:
+                        HeatEquation(sol).balance_integrate(ranges),
+                    args,dxes,order=5)-source(*args)))
         print out
     f = open('random_heat_MASA.dat','w')
     f.write('Ax, At, By, Bt, Cz, Ct, Dt, rho')
     for n in range(nx):
-        f.write(vals[n,:])
+        f.write(str(vals[n,:]))
     f.write('')
-    f.write(out)
+    f.write(str(out))
     import pdb;pdb.set_trace()
