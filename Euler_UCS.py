@@ -158,24 +158,30 @@ def normal_case():
 def two_shock_case():
     S = xi/t
     phi, theta, psi = .1, .7, .25
-#    S = (sympy.cos(theta)*xi-sympy.cos(psi)*sympy.sin(theta)*eta+
-#         sympy.sin(theta)*sympy.sin(psi)*zeta)/t
-    speeds = [.789631,8.68975,12.2507]
-    states = [sympy.Matrix([460.894,5.99924,19.5975]),
-              sympy.Matrix([1691.64,14.2823,8.68975]),
-              sympy.Matrix([1691.64,31.0426,8.68975]),
-              sympy.Matrix([46.0950,5.99242,-6.19633])]
-    base_state = [0,0,1,0,0,0,1,0,0,0,1,0,0,0,0,0,0]
+    S = (sympy.cos(phi)*sympy.cos(theta)*xi-sympy.cos(phi)*sympy.sin(theta)*eta)/t#+
+#         sympy.sin(theta)*zeta)/t
+    speeds = [0.78959391926443701,8.6897744116323814,12.250778123084338]
+    states = [sympy.Matrix([460.89400000000001,5.99924000000000000004,
+                            19.597500000000000]),
+              sympy.Matrix([1691.6469553991260,14.282349951978405,
+                            8.6897744116323814]),
+              sympy.Matrix([1691.6469553991260,31.042601641619882,
+                            8.6897744116323814]),
+              sympy.Matrix([46.09499999999999,5.99242000000000001,
+                            -6.19632999999997])]
+    base_state = [0.,0.,1.,0.,0.,0.,1.,0.,0.,0.,1.,0.,0.,0.,0.,0.,0.]
 #    out = {'sol':sympy.Matrix(list(H(speeds[0]-S)*states[0]+
 #           H(speeds[1]-S)*(1-H(speeds[0]-S))*states[1]+
 #           H(speeds[2]-S)*(1-H(speeds[1]-S))*states[2]+
 #           (               1-H(speeds[2]-S))*states[3])+base_state),
     out = {'sol':sympy.Matrix(
-            list(states[0]+
-                 H(S-speeds[0])*(states[1]-states[0])+
-                 H(S-speeds[1])*(states[2]-states[1])+
-                 H(S-speeds[2])*(states[3]-states[2]))+
-            base_state),
+            list(
+#                (1-H(S-speeds[0]))*states[0]+
+#                H(S-speeds[0])*states[1])+base_state),
+                (1-H(S-speeds[0]))*states[0]+
+                H(S-speeds[0])*(1-H(S-speeds[1]))*states[1]+
+                H(S-speeds[1])*(1-H(S-speeds[2]))*states[2]+
+                H(S-speeds[2])*states[3])+base_state),
            'discontinuities':[S-speed for speed in speeds]}
     return out
 

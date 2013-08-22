@@ -22,18 +22,16 @@ if __name__=="__main__":
     zeta = sympy.Symbol('zeta')
     args = (.01,.01,.01,.01)
     dxes = [.001 for arg in args]
-    kwargs = {
-        'Ax':1,'At':1,'By':.5,'Bt':-.25,'Cz':.7,'Ct':0,'Dt':.1,'rho':1,'cp':1,'k':1}
-    eqn = HeatEquation(MASA_solution(**kwargs))
-    print abs(recursive_derivative(
-            lambda x0,x1,x2,x3:eqn.balance_integrate(
-                ((t,0,x0),(x,0,x1),(y,0,x2),(z,0,x3))),args,dxes,order=5) - 
-              MASA_source_lambda(**kwargs)(*args))
-    import pdb;pdb.set_trace()
-    eqn2 = Euler_UCS(unsteady_Euler('normal'))
-    print "got this far"
+#    kwargs = {
+#        'Ax':1,'At':1,'By':.5,'Bt':-.25,'Cz':.7,'Ct':0,'Dt':.1,'rho':1,'cp':1,'k':1}
+#    eqn = HeatEquation(MASA_solution(**kwargs))
+#    print abs(recursive_derivative(
+#            lambda x0,x1,x2,x3:eqn.balance_integrate(
+#                ((t,0,x0),(x,0,x1),(y,0,x2),(z,0,x3))),args,dxes,order=5) - 
+#              MASA_source_lambda(**kwargs)(*args))
+    eqn2 = Euler_UCS(unsteady_Euler('two_shock'))
     print eqn2.balance_integrate(
-                ((t,0.9,1.),(xi,-1.,1.),(eta,-1.,1.)))#,(zeta,-1.,1.)))
+                ((t,0.1,1.),(xi,-1.,1.),(eta,-1.,1.),(zeta,-1.,1.)))
     print "done"
               
 
