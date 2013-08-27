@@ -158,7 +158,7 @@ def normal_case():
 
 def two_shock_case():
     speeds = [0.78959391926443701,8.6897744116323814,12.250778123084338]
-    phi, theta = 0., sympy.pi*.25
+    phi, theta = 0.1, sympy.pi*.25
     S = (sympy.cos(phi)*sympy.cos(theta)*xi+
          sympy.cos(phi)*sympy.sin(theta)*eta+
          sympy.sin(phi)*zeta)/t
