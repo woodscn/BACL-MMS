@@ -1,6 +1,7 @@
 import sympy
 from sympy.utilities.lambdify import lambdify
 H = sympy.special.delta_functions.Heaviside
+from sympy import sin, cos
 
 from base_equation import SympyEquation
 
@@ -131,7 +132,7 @@ def simple_case():
             'discontinuities':[]}
 
 def normal_case():
-    theta = 0.
+    theta = sympy.pi*.25
     S = (sympy.cos(theta)*xi+sympy.sin(theta)*eta)/t
     shock_speed = .78931
     p1 = 460.894
@@ -156,32 +157,42 @@ def normal_case():
     return out
 
 def two_shock_case():
-    S = xi/t
-    phi, theta, psi = .1, .7, .25
-    S = (sympy.cos(phi)*sympy.cos(theta)*xi-sympy.cos(phi)*sympy.sin(theta)*eta)/t#+
-#         sympy.sin(theta)*zeta)/t
     speeds = [0.78959391926443701,8.6897744116323814,12.250778123084338]
+    phi, theta = 0., sympy.pi*.25
+    S = (sympy.cos(phi)*sympy.cos(theta)*xi+
+         sympy.cos(phi)*sympy.sin(theta)*eta+
+         sympy.sin(phi)*zeta)/t
+    yz_rotation_matrix = sympy.Matrix(
+        [
+            [cos(phi)*cos(theta),-cos(phi)*sin(theta),sin(phi)],
+            [sin(theta),cos(theta),0],
+            [-cos(theta)*sin(phi),sin(theta)*sin(phi),cos(phi)]])
+#    S = yz_rotation_matrix.dot(sympy.Matrix([xi,eta,zeta]))[0]/t
     states = [sympy.Matrix([460.89400000000001,5.99924000000000000004,
-                            19.597500000000000]),
+                            19.597500000000000,0.,0.]),
               sympy.Matrix([1691.6469553991260,14.282349951978405,
-                            8.6897744116323814]),
+                            8.6897744116323814,0.,0.]),
               sympy.Matrix([1691.6469553991260,31.042601641619882,
-                            8.6897744116323814]),
+                            8.6897744116323814,0.,0.]),
               sympy.Matrix([46.09499999999999,5.99242000000000001,
-                            -6.19632999999997])]
-    base_state = [0.,0.,1.,0.,0.,0.,1.,0.,0.,0.,1.,0.,0.,0.,0.,0.,0.]
+                            -6.19632999999997,0.,0.])]
+    for state in states:
+        vel = sympy.Matrix([state[2],state[3],state[4]])
+        new_vel = yz_rotation_matrix.dot(vel)
+        state[2],state[3],state[4] = new_vel
+    base_state = [1.,0.,0.,0.,1.,0.,0.,0.,1.,0.,0.,0.,0.,0.,0.]
 #    out = {'sol':sympy.Matrix(list(H(speeds[0]-S)*states[0]+
 #           H(speeds[1]-S)*(1-H(speeds[0]-S))*states[1]+
 #           H(speeds[2]-S)*(1-H(speeds[1]-S))*states[2]+
 #           (               1-H(speeds[2]-S))*states[3])+base_state),
     out = {'sol':sympy.Matrix(
             list(
-#                (1-H(S-speeds[0]))*states[0]+
-#                H(S-speeds[0])*states[1])+base_state),
                 (1-H(S-speeds[0]))*states[0]+
-                H(S-speeds[0])*(1-H(S-speeds[1]))*states[1]+
-                H(S-speeds[1])*(1-H(S-speeds[2]))*states[2]+
-                H(S-speeds[2])*states[3])+base_state),
+                H(S-speeds[0])*states[1])+base_state),
+#                (1-H(S-speeds[0]))*states[0]+
+#                H(S-speeds[0])*(1-H(S-speeds[1]))*states[1]+
+#                H(S-speeds[1])*(1-H(S-speeds[2]))*states[2]+
+#                H(S-speeds[2])*states[3])+base_state),
            'discontinuities':[S-speed for speed in speeds]}
     return out
 
