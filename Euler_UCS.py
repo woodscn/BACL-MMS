@@ -122,7 +122,8 @@ def unsteady_Euler(case):
     cases = {'simple':simple_case,
              'two_shock':two_shock_case,
 #             'one_shock':one_shock_case,
-             'normal':normal_case}
+             'normal':normal_case,
+             'riemann_problem':riemann_problem_case}
     out = {'vars':[t,xi,eta,zeta],'eqn_kwargs':{}}
     out.update(cases[case]())
     return out
@@ -158,7 +159,7 @@ def normal_case():
 
 def two_shock_case():
     speeds = [0.78959391926443701,8.6897744116323814,12.250778123084338]
-    phi, theta = sympy.pi*.5, sympy.pi*.25
+    phi, theta = 0.,0.#sympy.pi*.5, sympy.pi*.25
     S = (sympy.cos(theta)*xi+
          sympy.sin(theta)*sympy.cos(phi)*eta+
          sympy.sin(theta)*sympy.sin(phi)*zeta)/t
@@ -191,6 +192,103 @@ def two_shock_case():
                 H(S-speeds[2])*states[3])+base_state),
            'discontinuities':[S-speed for speed in speeds]}
     return out
+
+def riemann_problem_case():
+    n = 4
+    tests = riemann_problem_init()
+    states,speeds = ([sympy.Matrix(state) for state in tests['states']],
+                     tests['speeds'])
+    S = (sympy.cos(theta)*xi+
+         sympy.sin(theta)*sympy.cos(phi)*eta+
+         sympy.sin(theta)*sympy.sin(phi)*zeta)/t
+    yz_rotation_matrix = sympy.Matrix(
+        [[sympy.cos(theta),0,0],
+         [sympy.sin(theta)*sympy.cos(phi),0,0],
+         [sympy.sin(theta)*sympy.sin(phi),0,0]])
+    for state in states:
+        vel = sympy.Matrix([state[2],state[3],state[4]])
+        new_vel = yz_rotation_matrix.dot(vel)
+        state[2],state[3],state[4] = new_vel
+    base_state = [1.,0.,0.,0.,1.,0.,0.,0.,1.,0.,0.,0.,0.,0.,0.]
+
+    out = {'sol':sympy.Matrix(list(
+                sympy.Piecewise(
+                    (states[0],S<speeds[0]),
+                    (inside_fan_state(states[0],speeds[1],speeds[0],S),
+                     speeds[1]!=speeds[0] and S<speeds[1]),
+                    (states[1],S<speeds[2]),
+                    (states[2],S<speeds[3]),
+                    (inside_fan_state(states[3],speeds[3],speeds[4],S),
+                     speeds[3]!=speeds[4] and S < speeds[4])
+                    (states[3],S>speeds[4])))+base_state),
+           'discontinuities':[S-speed for speed in speeds]}
+    return out
+    
+
+def inside_fan_state(upwind,head,tail,S):
+    if head > tail: 
+        plusminus = -1
+    else:
+        if head < tail:
+            plusminus = 1
+        else:
+            return None
+    
+    p = upwind[0]*(2/(gamma+1)+plusminus*(gamma-1)/(
+            (gamma+1)*sympy.sqrt(gamma*upwind[0]/upwind[1]))*(
+            upwind[2]+S))**((2*gamma)/(gamma-1))
+    d = upwind[1](p/upwind[0])**(1/gamma)
+    u = 2/(gamma+1)*((gamma-1)*.5*upwind[2]+S
+                     -plusminus*sympy.sqrt(gamma*upwind[0]/upwind[1]))
+    return sympy.Matrix([p,d,u,upwind[3],upwind[4]])
+
+def riemann_problem_init():
+    tests = []
+    tests[0] = {}
+    tests[0]['states'] = [
+        [1., 1., 0., 0., 0.],
+        [0.30313017805064679, 0.42631942817849516, 0.92745262004894879, 0., 0.],
+        [0.30313017805064679, 0.26557371170530708, 0.92745262004894879, 0., 0.],
+        [.1, .125, 0., 0., 0.]]
+    tests[0]['speeds'] = [-1.1832159566199232, -7.02728125611844501E-002,
+                           0.92745262004894879, 1.7521557320301779, 
+                           1.7521557320301779]
+    tests[1] = {}
+    tests[1]['states'] = [
+        [.4, 1., -2., 0., 0.],
+        [1.89387342005476107E-003, 2.18521182068128102E-002, 0., 0., 0.],
+        [1.89387342005476107E-003, 2.18521182068128102E-002, 0., 0., 0.],
+        [.4, 1., 2., 0., 0.]]
+    tests[1]['speeds'] = [-2.7483314773547880, -0.34833147735478825,
+                           0., 0.34833147735478825, 2.7483314773547880]
+    tests[2] = {}
+    tests[2]['states'] = [
+        [1000., 1., 0., 0., 0.],
+        [460.89378749138365, 0.57506229847655554, 19.597451388723059, 0., 0.],
+        [460.89378749138365, 5.9992407047962342, 19.597451388723059, 0., 0.],
+        [.01, 1., 0., 0., 0.]]
+    tests[2]['speeds'] = [-37.416573867739416, -13.899632201271743,
+                           19.597451388723059, 23.517536966903236,
+                           23.517536966903236]
+    tests[3] = {}
+    tests[3]['states'] = [
+        [.01, 1., 0., 0., 0.],
+        [46.095044248867971, 5.9924168635152260, -6.1963282497870367, 0., 0.],
+        [46.095044248867971, 0.57511278978241231, -6.1963282497870367, 0., 0.],
+        [100., 1., 0., 0., 0.]]
+    tests[3]['speeds'] = [-7.4374762586943133, -7.4374762586943133,
+                           -6.1963282497870367, 4.3965656664547872,
+                           11.832159566199232]
+    tests[4] = {}
+    tests[4]['states'] = [
+        [460.894, 5.99924, 19.5975, 0., 0.],
+        [1691.6469553991260, 14.282349951978405, 8.6897744116323814, 0., 0.],
+        [1691.6469553991260, 31.042601641619882, 8.6897744116323814, 0., 0.],
+        [46.0950, 5.99242, -6.19633, 0., 0.]]
+    tests[4]['speeds'] = [0.78959391926443701, 0.78959391926443701,
+                           8.6897744116323814, 12.250778123084338,
+                           12.250778123084338]
+    return tests    
 
 def MASA_solution_E():
     kwargs={'x0':1,
