@@ -194,8 +194,8 @@ def two_shock_case():
     return out
 
 def riemann_problem_case():
-    n = 0
-    theta, phi = sympy.pi*.5, sympy.pi*.25
+    n = 1
+    theta, phi = sympy.pi*.25, sympy.pi*.25
     tests = riemann_problem_init()
     states,speeds = ([sympy.Matrix(state) for state in tests[n]['states']],
                      tests[n]['speeds'])
