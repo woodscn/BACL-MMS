@@ -194,8 +194,8 @@ def two_shock_case():
     return out
 
 def riemann_problem_case():
-    n = 1
-    theta, phi = sympy.pi*.25, sympy.pi*.25
+    n = 4
+    theta, phi = sympy.pi/2, 0.
     tests = riemann_problem_init()
     states,speeds = ([sympy.Matrix(state) for state in tests[n]['states']],
                      tests[n]['speeds'])
@@ -214,7 +214,6 @@ def riemann_problem_case():
         vel = sympy.Matrix([state[2],state[3],state[4]])
         new_vel = yz_rotation_matrix.dot(vel)
         state[2],state[3],state[4] = new_vel
-
     base_state = [1.,0.,0.,0.,1.,0.,0.,0.,1.,0.,0.,0.,0.,0.,0.]
     out = {'sol':sympy.Matrix(list(
                 (1-H(S-speeds[0]))*states[0]+
@@ -224,8 +223,10 @@ def riemann_problem_case():
                 H(S-speeds[3])*(1-H(S-speeds[4]))*states[4]+
                 H(S-speeds[4])*states[5])+base_state),
            'discontinuities':[S-speed for speed in speeds]}
-#    x = [.004*x_ - 2. for x_ in range(1001)]
-#    sol = lambda x : sympy.Matrix(out['sol'][:5]).subs({xi:x,t:1.})[1]
+    x = [.08*x_ - 2. for x_ in range(51)]
+    sol = lambda x : sympy.Matrix(out['sol'][:5]).subs({eta:x,t:1.})[1]
+    print [sol(x_) for x_ in x]
+    import pdb;pdb.set_trace()
 #    from matplotlib import pyplot as plt
 #    plt.plot(x,[sol(x_) for x_ in x])
 #    plt.show()
@@ -239,6 +240,7 @@ def inside_fan_state(upwind,head,tail,S):
         if head < tail:
             plusminus = 1
         else:
+            print "this is a shock"
             return upwind
     
     p = upwind[0]*(2/(gamma+1)-plusminus*(gamma-1)/(

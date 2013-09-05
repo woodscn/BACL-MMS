@@ -31,7 +31,11 @@ if __name__=="__main__":
 #              MASA_source_lambda(**kwargs)(*args))
     eqn2 = Euler_UCS(unsteady_Euler('riemann_problem'))
     print eqn2.balance_integrate(
-                ((t,0.1,1.),(xi,-1.,1.),(eta,-1.,1.),(zeta,-1.,1.)))
+                ((t,0.1,1.)
+#                 ,(xi,-1.,1.)
+                 ,(eta,-1.,1.)
+#                 ,(zeta,-1.,1.)
+                 ))
     print "done"
               
 
