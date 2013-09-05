@@ -29,9 +29,9 @@ if __name__=="__main__":
 #            lambda x0,x1,x2,x3:eqn.balance_integrate(
 #                ((t,0,x0),(x,0,x1),(y,0,x2),(z,0,x3))),args,dxes,order=5) - 
 #              MASA_source_lambda(**kwargs)(*args))
-    eqn2 = Euler_UCS(unsteady_Euler('two_shock'))
+    eqn2 = Euler_UCS(unsteady_Euler('riemann_problem'))
     print eqn2.balance_integrate(
-                ((t,0.1,1.),(xi,-1.,1.)))#,(eta,-1.,1.),(zeta,-1.,1.)))
+                ((t,0.1,1.),(xi,-1.,1.),(eta,-1.,1.),(zeta,-1.,1.)))
     print "done"
               
 
