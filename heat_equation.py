@@ -86,34 +86,44 @@ def heat_exact_tests(ranges,nx):
             for n in range(8)]
  
 
-def test_exact():
-    ranges = (
-        (t,0.,1.)
-        ,(x,-.5,.5)
-        ,(y,-.5,.5)
-        ,(z,-.5,.5)
-        )
-    n_choices = list(range(8))
-    theta_choices = [.05*numpy.pi*range_ for range_ in range(2)]
-    phi_choices  = [0]
-    A_choices = [.001, .01, .1, 1., 10., 100., 1000.]
-    B_choices = A_choices
-    C_choices = [.2*range_ for range_ in range(6)]
-    mu_choices = [.01, .1, 1., 10., 100.]
-    a_choices = A_choices
-
-    n,theta,phi,A,B,C,mu,a = [random.choice(choices) for choices in 
-                              [n_choices,theta_choices,phi_choices,A_choices,
-                               B_choices,C_choices,mu_choices,a_choices]]
-    print n,theta/numpy.pi*180,phi/numpy.pi*180,A,B,C,mu,a
-    sol = heat_exact_sol(n=n,theta=theta,phi=phi,A=A,B=B,C=C,mu=mu,a=a)
-    S_prime = HeatEquation(sol).balance_integrate(ranges)
-    print n,theta/numpy.pi*180,phi/numpy.pi*180,A,B,mu,a,S_prime
+def test_exact(ntests):
     f = open('random_heat_exact.dat','w')
-    f.write('problem #, theta(deg), phi(deg), A, B, C, mu, a, residual')
-    f.write('\n'+str(
-            (n,theta/numpy.pi*180,phi/numpy.pi*180,A,B,C,mu,a,S_prime[0])))
+    f.write('%problem #, theta(deg), phi(deg), A, B, C, mu, a, residual')
+    for n in range(ntests):
+        ranges = (
+            (t,0.,1.)
+            ,(x,-.5,.5)
+            ,(y,-.5,.5)
+            ,(z,-.5,.5)
+            )
+        n_choices = [0,1,2,3,4,5,6,7]
+        theta_choices = [.05*numpy.pi*range_ for range_ in range(11)]
+        phi_choices  = theta_choices
+        A_choices = [.001, .01, .1, 1., 10., 100., 1000.]
+        B_choices = A_choices
+        C_choices = [.2*range_ for range_ in range(6)]
+        mu_choices = [0, .5, 1., 1.5, 2., 2.5, 3.0]
+        a_choices = [.001, .01, .1, 1., 10.]
+        
+        n,theta,phi,A,B,C,mu,a = [random.choice(choices) for choices in 
+                                  [n_choices,theta_choices,phi_choices,
+                                   A_choices,B_choices,C_choices,
+                                   mu_choices,a_choices]]
+    #    print n,theta/numpy.pi*180,phi/numpy.pi*180,A,B,C,mu,a
+        sol = heat_exact_sol(n=n,theta=theta,phi=phi,A=A,B=B,C=C,mu=mu,a=a)
+        try:
+            S_prime = HeatEquation(sol).balance_integrate(ranges)
+        #    print n,theta/numpy.pi*180,phi/numpy.pi*180,A,B,mu,a,S_prime
+            f.write('\n'+', '.join([str(item) for item in 
+                                    (n,theta/numpy.pi*180,phi/numpy.pi*180,
+                                     A,B,C,mu,a,S_prime[0])]))
+        except(OverflowError):
+            print "Overflow Error!"
+            print ('n = ',n,'theta = ',theta,'phi = ',phi,
+                   'A = ',A,'B = ',B,'C = ',C,'mu = ',mu,'a = ',a)
+            
     f.close()
+    
 
 #    import matplotlib
 #    import matplotlib.pyplot as plt
@@ -130,5 +140,5 @@ def test_exact():
 
 
 if __name__=="__main__":
-    test_exact()
+    test_exact(100)
     print "done"
