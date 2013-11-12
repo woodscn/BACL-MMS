@@ -49,7 +49,7 @@ class IntegrableFunction(object):
         self.args=args
         self.sympy_variables = self.int_variables
         self.function = Integrand(
-            sympy_function,self.sympy_variables,args=self.args).ctypesified
+            sympy_function,self.sympy_variables,args=self.args)
         self.integrate = self.quad_integrate
 
         # Unpack sympy_discontinuities into a list of points for nquad.
@@ -178,8 +178,8 @@ class Integrand(object):
             print 'args = ',args
             print 'sympy_vars = ',self.sympy_variables
             raise Error('invalid argument list given in call to Integrand!')
-        out = self.lambdified(*args)
-#        out = self.ctypesified(*args)
+#        out = self.lambdified(*args)
+        out = self.ctypesified(*args)
 #        print (out-out2)**2
 #        exit()
         clear_cache()
@@ -197,10 +197,8 @@ if __name__=="__main__":
 #         sympy.sin(theta)*sympy.sin(psi)*zeta)
 #    integrands = [(.5+x**3*t**(-2)-x*y*z)+H(.5-S)+H(.25-S)]
     base_integrand = x**2+y**2-z**2+x*y*z*t+sympy.cos(t)+x*y**3
-    integrands = [sympy.Piecewise((0+base_integrand,S<0),
+    integrands = [sympy.Piecewise((0+base_integrand,x<0),
                                   (35+base_integrand,True))]
-    test = {'sympy_ranges':((t,.8,1.),(x,-1.,1.),(y,-1.,1.),(z,-1,1)),
-            'sympy_discontinuities':[S]}#,'args':{z:1}}
-    import pdb;pdb.set_trace()
-    print "ctypes"+str(IntegrableFunction(integrands[0],**test).integrate())
-#    print "lambda"+str(IntegrableFunction(integrands[0],**test).integrate())
+    test = {'sympy_ranges':((t,.8,1.),(x,-1.,1.),(y,-1.,1.)),
+            'sympy_discontinuities':[.5-S,.25-S],'args':{z:1}}
+    print IntegrableFunction(integrands[0],**test).integrate()

@@ -159,7 +159,7 @@ def normal_case():
 
 def two_shock_case():
     speeds = [0.78959391926443701,8.6897744116323814,12.250778123084338]
-    phi, theta = 0.,sympy.pi*.5#sympy.pi*.5, sympy.pi*.25
+    phi, theta = 0.,sympy.pi*.1#sympy.pi*.5, sympy.pi*.25
     S = (sympy.cos(theta)*xi+
          sympy.sin(theta)*sympy.cos(phi)*eta+
          sympy.sin(theta)*sympy.sin(phi)*zeta)/t
@@ -194,8 +194,8 @@ def two_shock_case():
     return out
 
 def riemann_problem_case():
-    n = 0
-    theta, phi = sympy.pi*.4, 0.
+    n = 4
+    theta, phi = sympy.pi*.5, 0.
     tests = riemann_problem_init()
     states,speeds = ([sympy.Matrix(state) for state in tests[n]['states']],
                      tests[n]['speeds'])
@@ -215,22 +215,28 @@ def riemann_problem_case():
         new_vel = yz_rotation_matrix.dot(vel)
         state[2],state[3],state[4] = new_vel
     base_state = [1.,0.,0.,0.,1.,0.,0.,0.,1.,0.,0.,0.,0.,0.,0.]
-    out = {'sol':sympy.Matrix(list(
-                (1-H(S-speeds[0]))*states[0]+
-                H(S-speeds[0])*(1-H(S-speeds[1]))*states[1]+
-                H(S-speeds[1])*(1-H(S-speeds[2]))*states[2]+
-                H(S-speeds[2])*(1-H(S-speeds[3]))*states[3]+
-                H(S-speeds[3])*(1-H(S-speeds[4]))*states[4]+
-                H(S-speeds[4])*states[5])+base_state),
+    
+    prims = map(list,zip(*states))
+    sol_list = []
+    for i, prim in enumerate(prims):
+        piecewise_args = []
+        piecewise_args.append((prim[0],S<speeds[0]))
+        if speeds[1] != speeds[0]: 
+            piecewise_args.append((prim[1],S<speeds[1]))
+        piecewise_args.append((prim[2],S<speeds[2]))
+        piecewise_args.append((prim[3],S<speeds[3]))
+        if speeds[4] != speeds[3]:
+            piecewise_args.append((prim[4],S<speeds[4]))
+        piecewise_args.append((prim[5],True))
+        sol_list.append(sympy.Piecewise(*piecewise_args))
+    solution_state = sol_list+base_state
+    out = {'sol':sympy.Matrix(solution_state),
            'discontinuities':[S-speed for speed in speeds]}
-#    x = [.08*x_ - 2. for x_ in range(51)]
-#    sol = lambda x : sympy.Matrix(out['sol'][:5]).subs({eta:x,t:1.})[1]
-#    print [sol(x_) for x_ in x]
-#    import pdb;pdb.set_trace()
-#    from matplotlib import pyplot as plt
-#    plt.plot(x,[sol(x_) for x_ in x])
-#    plt.show()
-#    import pdb;pdb.set_trace()
+#    import matplotlib.pyplot as plt
+#    from mpl_toolkits.mplot3d import Axes3D
+#    fig = plt.figure()
+#    ax = fig.add_subplot(111,projection='3d')
+#    Axes3D.plot_surface(X,Y,Z)
     return out
 
 def inside_fan_state(upwind,head,tail,S):
@@ -301,11 +307,29 @@ def riemann_problem_init():
                            12.250778123084338]
     return tests    
 
+def MASA_with_pinned_bounds(ranges):
+    out = MASA_solution_E()
+    out_vars = list(out['vars'])
+    out_vars.remove(t)
+#    pinning_eqn_list = [((range_[1]**2-range_[0]**2)*(var-range_[0]) + 
+#                         (range_[1]-range_[0])*(var**2-range_[0]**2)) 
+#                        for [range_,var] in zip(ranges,out_vars)]
+#    pinning_eqn = sympy.simplify(
+#        pinning_eqn_list[0]*pinning_eqn_list[1]*pinning_eqn_list[2])
+    x0, xn, ymax = 0., 100., 2.
+    pinning_eqn = 4.*ymax/(xn-x0)**2*(-out_vars[0]**2+(xn+x0)*out_vars[0]-x0*xn)
+    out['sol'] = sympy.Matrix(
+        [sol*pinning_eqn + .01 for sol in out['sol'][0:5]]+out['sol'][5:])
+    return out
+
 def MASA_solution_E():
     kwargs={'x0':1,
-            'xx':1,'ax':1,'fx':sympy.sin,
-            'xy':1,'ay':1,'fy':sympy.cos,
-            'xz':1,'az':1,'fz':sympy.cos,'L':2}
+            'xx':1,'ax':.1,'fx':sympy.sin,
+#            'xy':1,'ay':.1,'fy':sympy.cos,
+#            'xz':1,'az':.1,'fz':sympy.cos,
+            'xy':0,'ay':.0,'fy':sympy.cos,
+            'xz':0,'az':.0,'fz':sympy.cos,
+            'L':20.}
     return {'vars':[t,xi,eta,zeta],'sol':sympy.Matrix(
             [MASA_sol_var(**kwargs) for var in range(5)]+
             [1,0,0,0,1,0,0,0,1,0,0,0,0,0,0]),'discontinuities':[],
@@ -313,11 +337,13 @@ def MASA_solution_E():
 
 def MASA_sol_var(x0,xx,ax,fx,xy,ay,fy,xz,az,fz,L):
     return (x0+
-                xx*fx(ax*sympy.pi*xi/L)+
+            xx*fx(ax*sympy.pi*xi/L)+
             xy*fy(ay*sympy.pi*eta/L)+
             xz*fz(az*sympy.pi*zeta/L))
 
 if __name__ == "__main__":
-    out = MASA_solution_E()
-    eqn = Euler_UCS(MASA_solution_E())
+    eqn = Euler_UCS(MASA_with_pinned_bounds([[0,1],[0,1],[0,1]]))
+    print eqn.balance_diff()[0]
+    out = eqn.balance_lambda_init()
     import pdb;pdb.set_trace()
+    

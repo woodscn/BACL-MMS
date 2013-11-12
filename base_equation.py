@@ -1,4 +1,5 @@
 import sympy
+from sympy.utilities.lambdify import lambdify
 import numpy as np
 from integration import list_integral
 from functools import partial
@@ -20,7 +21,16 @@ class SympyEquation(object):
         vars_ = list(expr)
         for n in range(len(vars_)):
             vars_[n] = var_in
-        return map(lambda u,x:sympy.diff(u,x),expr,vars_)
+        return sympy.Matrix(map(lambda u,x:sympy.diff(u,x),expr,vars_))
+    def balance_diff(self):
+        terms = [self.vector_diff(flux,var) 
+                 for (flux, var) in zip(self.fluxes,self.vars_)]+[self.source]
+        self.source_diff_symbolic = reduce(sympy.Matrix.__add__,terms)
+        return self.source_diff_symbolic
+    def balance_lambda_init(self):
+        self.balance_diff()
+        self.balance_diff_lambda=lambdify(self.vars_,self.source_diff_symbolic)
+        return self.balance_diff_lambda
     def flux_integrate(self,flux,area_ranges,point_range,discs=()):
         out = (np.array(list_integral(
                     flux,sympy_ranges=area_ranges,sympy_discontinuities=discs,
@@ -38,15 +48,11 @@ class SympyEquation(object):
         # also multiprocess here. Pool workers can't spawn their
         # own pools.
         out = np.zeros(len(self.sol))
-        partial_junk = partial(junk,obj=self,ranges=ranges,
+        wrapper = partial(flux_integrate_wrapper,obj=self,ranges=ranges,
                                discs=self.discontinuities)
         pool = Pool()
         out_list = []
-#        for ind in range(len(ranges)):
-#            temp = junk(ind,self,ranges,self.discontinuities)
-#            print "Temp is done"
-#            out_list.append(temp)
-        out_list = pool.map(partial_junk,range(len(ranges)))
+        out_list = pool.map(wrapper,range(len(ranges)))
         pool.close()
         pool.join()
         print "done with flux integrals"
@@ -54,7 +60,7 @@ class SympyEquation(object):
         print "done with source integral"
         out = sum(out)
         return out
-def junk(ind,obj,ranges,discs):
+def flux_integrate_wrapper(ind,obj,ranges,discs):
     return obj.flux_integrate(
         obj.fluxes[ind],
         area_ranges=[item for item in ranges if item is not ranges[ind]],

@@ -3,9 +3,9 @@ dat = load('random_heat_exact_best.dat');
 dat(:,2:3) = dat(:,2:3)*pi/180.;
 dat(:,4:5) = log10(abs(dat(:,4:5)));
 dat(:,8:9) = log10(abs(dat(:,8:9)));
-labels = {'Problem #','\theta (rad)','\phi (rad)',...
-    'log(A)','log(B)','C','\mu','log(\alpha)',...
-    'log(Residual)'};
+labels = {'#','theta','phi',...
+    'log(A)','log(B)','C','mu','log(alpha)',...
+    'log(R)'};
 figure(1)
 parallelcoords(dat,'Labels',labels)
 ylim([-10,10])
@@ -13,14 +13,15 @@ datE = load('Eulerdats.mat');
 datE = datE.datE;
 for n = 1:57
     norm_facs = normalizing_factors(datE(n,1)+1);
+    norm_facs = norm_facs*0+1
     datE(n,3:end) = log10(...
         abs(datE(n,3:end))./norm_facs...
         +(1e-19));
 end
-labelsE = {'Problem #','\theta (rad)','log(R(rho))',...
+labelsE = {'Problem #','theta (rad)','log(R(rho))',...
     'log(R(rho u))', 'log(R(rho v))', 'log(R(rho e))'};
 figure(2)
-parallelcoords(datE,'Labels',labelsE)
+parallelcoords(datE,'Labels',labelsE,'Group',datE(:,1))
 ylim([-10 5])
 out = 0;
 end

@@ -140,5 +140,10 @@ def test_exact(ntests):
 
 
 if __name__=="__main__":
+    sol = heat_exact_sol(n=1,theta=0,phi=0,A=1,B=1,C=1,mu=1,a=1)
+    sol = MASA_solution(1,1,1,1,1,1,1,1,1,1)
+    S_prime = HeatEquation(sol).balance_diff()
+    print S_prime[0] == MASA_source(1,1,1,1,1,1,1,1,1,1)
+    import pdb;pdb.set_trace()
     test_exact(100)
     print "done"
