@@ -307,42 +307,73 @@ def riemann_problem_init():
                            12.250778123084338]
     return tests    
 
-def MASA_with_pinned_bounds(ranges):
-    out = MASA_solution_E()
+def MASA_with_pinned_bounds(ranges,nxes=(100,1,1),
+                            dxis=(1.,1.,1.),x_origin=(0.,0.,0.)):
+    ((x0,xn),(y0,yn),(z0,zn)) = ranges
+    out = MASA_solution_full(ranges,nxes,dxis,x0=x_origin)
     out_vars = list(out['vars'])
     out_vars.remove(t)
-#    pinning_eqn_list = [((range_[1]**2-range_[0]**2)*(var-range_[0]) + 
-#                         (range_[1]-range_[0])*(var**2-range_[0]**2)) 
-#                        for [range_,var] in zip(ranges,out_vars)]
-#    pinning_eqn = sympy.simplify(
-#        pinning_eqn_list[0]*pinning_eqn_list[1]*pinning_eqn_list[2])
-    x0, xn, ymax = 0., 100., 2.
-    pinning_eqn = 4.*ymax/(xn-x0)**2*(-out_vars[0]**2+(xn+x0)*out_vars[0]-x0*xn)
+    valmax = 2.
+    pinning_eqn = (4.*valmax/(xn-x0)**2*
+                   (-out_vars[0]**2+(xn+x0)*out_vars[0]-x0*xn))
     out['sol'] = sympy.Matrix(
         [sol*pinning_eqn + .01 for sol in out['sol'][0:5]]+out['sol'][5:])
     return out
 
-def MASA_solution_E():
+def MASA_solution_full(ranges,nxes=(100,1,1),dxis=(1.,1.,1.),x0=(0.,0.,0.)):
     kwargs={'x0':1,
-            'xx':1,'ax':.1,'fx':sympy.sin,
-#            'xy':1,'ay':.1,'fy':sympy.cos,
-#            'xz':1,'az':.1,'fz':sympy.cos,
-            'xy':0,'ay':.0,'fy':sympy.cos,
-            'xz':0,'az':.0,'fz':sympy.cos,
-            'L':20.}
-    return {'vars':[t,xi,eta,zeta],'sol':sympy.Matrix(
-            [MASA_sol_var(**kwargs) for var in range(5)]+
-            [1,0,0,0,1,0,0,0,1,0,0,0,0,0,0]),'discontinuities':[],
-            'eqn_kwargs':{}}
+            'xx':1,'ax':.1,'fx':sympy.sin,'Lx':20.,
+            'xy':0,'ay':.0,'fy':sympy.cos,'Ly':20.,
+            'xz':0,'az':.0,'fz':sympy.cos,'Lz':20.,
+            'xt':0,'at':.0,'ft':sympy.cos,'Lt':20.}
+    dxes = [1,1,1]
+    for ind in range(3):
+        try:
+            dxes[ind] = float(ranges[ind][1]-ranges[ind][0])/(nxes[ind]-1)
+        except(ZeroDivisionError):
+            dxes[ind] = float(ranges[ind][1]-ranges[ind][0])/nxes[ind]
+#    dxes = [float((range_[1]-range_[0]))/(nx-1)
+#            for (range_,nx) in zip(ranges,nxes)]
+    prims = [MASA_full_var(**kwargs) for var in range(5)]
+    grid_vels = [0.*.25*vel for vel in prims[2:]]
+    dx_dxi = dx_dxi_f(dx_dlambda=grid_vels,
+                      dx_dxi_0=[dxes[0]/dxis[0],0.,0.,
+                                0.,dxes[1]/dxis[1],0.,
+                                0.,0.,dxes[2]/dxis[2]],t0=0.)
+    xes = x_f(dx_dxi,grid_vels,x0,dxis)
+    return {'vars':[t,xi,eta,zeta],
+            'sol':sympy.Matrix(prims+dx_dxi+grid_vels+xes),
+            'discontinuities':[],'eqn_kwargs':{}}
 
-def MASA_sol_var(x0,xx,ax,fx,xy,ay,fy,xz,az,fz,L):
+def dx_dxi_f(dx_dlambda,dx_dxi_0,t0):
+    change = [0 for ind in range(9)]
+    out = list(change)
+    for inda in range(3):
+        for indb in range(3):
+            change[inda*3+indb] = sympy.integrate(sympy.diff(
+                    dx_dlambda[indb],[xi,eta,zeta][inda]),t)
+            out[inda*3+indb] = ( change[inda*3+indb] + dx_dxi_0[inda*3+indb] - 
+                                 change[inda*3+indb].subs({t:t0}) )
+    return out
+
+def x_f(dx_dxi,dx_dlambda,x0,dxis):
+    # Assumes a simple initial grid, where dx~dxi, dy~deta, dz~dzeta
+    initial_xes = [dx_dxi[0]*xi+x0[0],dx_dxi[4]*eta+x0[1],dx_dxi[8]*zeta+x0[2]]
+    initial_xes = [x.subs({t:0}) for x in initial_xes]
+    out = [initial_xes[ind] + 
+           sympy.integrate(dx_dlambda[ind],t) for ind in range(3)]
+    return out
+
+
+def MASA_full_var(x0,xx,ax,fx,Lx,xy,ay,fy,Ly,xz,az,fz,Lz,xt,at,ft,Lt):
     return (x0+
-            xx*fx(ax*sympy.pi*xi/L)+
-            xy*fy(ay*sympy.pi*eta/L)+
-            xz*fz(az*sympy.pi*zeta/L))
-
+            xt*ft(at*sympy.pi*t/Lt)+
+            xx*fx(ax*sympy.pi*xi/Lx)+
+            xy*fy(ay*sympy.pi*eta/Ly)+
+            xz*fz(az*sympy.pi*zeta/Lz))
+            
 if __name__ == "__main__":
-    eqn = Euler_UCS(MASA_with_pinned_bounds([[0,1],[0,1],[0,1]]))
+    eqn = Euler_UCS(MASA_with_pinned_bounds([[0,1],[0,1],[0,1]],nxes=(100,1,1)))
     print eqn.balance_diff()[0]
     out = eqn.balance_lambda_init()
     import pdb;pdb.set_trace()

@@ -21,7 +21,8 @@ class SympyEquation(object):
         vars_ = list(expr)
         for n in range(len(vars_)):
             vars_[n] = var_in
-        return sympy.Matrix(map(lambda u,x:sympy.diff(u,x),expr,vars_))
+#        return sympy.Matrix(map(lambda u,x:sympy.diff(u,x),expr,vars_))
+        return sympy.Matrix(map(lambda u,x=var_in:sympy.diff(u,x),expr,vars_))
     def balance_diff(self):
         terms = [self.vector_diff(flux,var) 
                  for (flux, var) in zip(self.fluxes,self.vars_)]+[self.source]
