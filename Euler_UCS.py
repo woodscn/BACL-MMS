@@ -307,18 +307,77 @@ def riemann_problem_init():
                            12.250778123084338]
     return tests    
 
-def MASA_with_pinned_bounds(ranges,nxes=(100,1,1),
-                            dxis=(1.,1.,1.),x_origin=(0.,0.,0.)):
-    ((x0,xn),(y0,yn),(z0,zn)) = ranges
-    out = MASA_solution_full(ranges,nxes,dxis,x0=x_origin)
-    out_vars = list(out['vars'])
-    out_vars.remove(t)
-    valmax = 2.
-    pinning_eqn = (4.*valmax/(xn-x0)**2*
-                   (-out_vars[0]**2+(xn+x0)*out_vars[0]-x0*xn))
-    out['sol'] = sympy.Matrix(
-        [sol*pinning_eqn + .01 for sol in out['sol'][0:5]]+out['sol'][5:])
+def dx_dxi_f(dx_dlambda,dx_dxi_0,t0=0):
+    change = [0 for ind in range(9)]
+    out = list(change)
+    for inda in range(3):
+        for indb in range(3):
+            change[inda*3+indb] = sympy.integrate(sympy.diff(
+                    dx_dlambda[indb],[xi,eta,zeta][inda]),t)
+            out[inda*3+indb] = ( change[inda*3+indb] + dx_dxi_0[inda*3+indb] - 
+                                 change[inda*3+indb].subs({t:t0}) )
     return out
+
+def x_f(initial_xes,dx_dlambda):
+    # Assumes integrate(dx_dlambda,t)(t=t0) = 0
+    out = [initial_xes[ind] + 
+           sympy.integrate(dx_dlambda[ind],t) for ind in range(3)]
+    return out
+
+
+def MASA_full_var(x0,xx,ax,fx,Lx,xy,ay,fy,Ly,xz,az,fz,Lz,xt,at,ft,Lt):
+    return (x0+
+            xt*ft(at*sympy.pi*t/Lt)+
+            xx*fx(ax*sympy.pi*xi/Lx)+
+            xy*fy(ay*sympy.pi*eta/Ly)+
+            xz*fz(az*sympy.pi*zeta/Lz))
+def MMS_solution(x_ranges,nxis,dxis):
+    vars = [t,xi,eta,zeta]
+    pin = pinned_0_bounds([x_ranges[0]],[vars[1]]) # 1-D pin only
+    kwargs={'x0':1,
+            'xx':1,'ax':.1,'fx':sympy.sin,'Lx':20.,
+            'xy':0,'ay':.0,'fy':sympy.cos,'Ly':20.,
+            'xz':0,'az':.0,'fz':sympy.cos,'Lz':20.,
+            'xt':0,'at':.0,'ft':sympy.cos,'Lt':20.}
+    prims = [MASA_full_var(**kwargs) for var in range(5)]
+    grid_vels = [0.*.25*vel for vel in prims[2:]]
+    MMS_obj = MMSwithCartesianEdgeGrid(prims,grid_vels,x_ranges,nxis,dxis=dxis)
+    sol = sympy.Matrix(MMS_obj.solution())
+    return {'vars':vars,'sol':sol,'discontinuities':[],'eqn_kwargs':{},
+            'MMS_obj':MMS_obj}
+
+class MMSwithCartesianEdgeGrid(object):
+    def __init__(self,prims,grid,x_ranges,nxis,
+                 xi_offsets=(0.,0.,0.),dxis=(1.,1.,1.),vars=(xi,eta,zeta)):
+        self.prims = prims
+        self.p,self.rho,self.u,self.v,self.w = prims
+        self.grid = grid
+        self.U,self.V,self.W = grid
+        self.x_ranges = x_ranges
+        self.xi_offsets = xi_offsets
+        self.nxis = nxis
+        self.dxis = dxis
+        self.vars = vars
+        self.dxes = [(range_[1]-range_[0])/(nxi-1) for range_,nxi in 
+                     zip(self.x_ranges,self.nxis)]
+        self.dxdxi_0 = [self.dxes[0]/self.dxis[0],0.,0.,
+                        0.,self.dxes[1]/self.dxis[1],0.,
+                        0.,0.,self.dxes[2]/self.dxis[2]]
+        self.dxdxi = dx_dxi_f(self.grid,self.dxdxi_0)
+        self.xes_0 = [range_[0] + dxdxi*(var_-xi_0) for range_,dxdxi,var_,xi_0 in
+                    zip(x_ranges,
+                        (self.dxdxi_0[0],self.dxdxi_0[4],self.dxdxi_0[8]),
+                        self.vars,self.xi_offsets)]
+        self.xes = x_f(self.xes_0,self.grid)
+        self.full = self.prims+self.dxdxi+self.grid+self.xes
+
+    def solution(self):
+        return self.full
+
+    def index_to_xi(self,i,j,k):
+        xi_in = [xi_0 + i*dxi for xi_0,i,dxi in 
+                 zip(self.xi_offsets,(i,j,k),self.dxis)]
+        return xi_in
 
 def MASA_solution_full(ranges,nxes=(100,1,1),dxis=(1.,1.,1.),x0=(0.,0.,0.)):
     kwargs={'x0':1,
@@ -345,32 +404,30 @@ def MASA_solution_full(ranges,nxes=(100,1,1),dxis=(1.,1.,1.),x0=(0.,0.,0.)):
             'sol':sympy.Matrix(prims+dx_dxi+grid_vels+xes),
             'discontinuities':[],'eqn_kwargs':{}}
 
-def dx_dxi_f(dx_dlambda,dx_dxi_0,t0):
-    change = [0 for ind in range(9)]
-    out = list(change)
-    for inda in range(3):
-        for indb in range(3):
-            change[inda*3+indb] = sympy.integrate(sympy.diff(
-                    dx_dlambda[indb],[xi,eta,zeta][inda]),t)
-            out[inda*3+indb] = ( change[inda*3+indb] + dx_dxi_0[inda*3+indb] - 
-                                 change[inda*3+indb].subs({t:t0}) )
+#def MASA_with_pinned_bounds(ranges,nxes=(100,1,1),
+#                            dxis=(1.,1.,1.),x_origin=(0.,0.,0.)):
+#    ((x0,xn),(y0,yn),(z0,zn)) = ranges
+#    out = MASA_solution_full(ranges,nxes,dxis,x0=x_origin)
+#    out_vars = list(out['vars'])
+#    out_vars.remove(t)
+#    valmax = 2.
+#    pinning_eqn = (4.*valmax/(xn-x0)**2*
+#                   (-out_vars[0]**2+(xn+x0)*out_vars[0]-x0*xn))
+#    out['sol'] = sympy.Matrix(
+#        [sol*pinning_eqn + .01 for sol in out['sol'][0:5]]+out['sol'][5:])
+#    return out
+
+def pinned_0_bounds(ranges,vars,valmax=1):
+    pinning_eqn_l = [(4.*valmax/(range_[1]-range_[0])**2*
+                    (-var**2+(range_[1]+range_[0])*var+range_[1]-range_[0]))
+                   for var,range_ in zip(vars,ranges)]
+    out = 1
+    for eqn in pinning_eqn_l:
+        out = out*eqn
+#    pinning_eqn = (4.*valmax/(xn-x0)**2*
+#                   (-var**2+(x0+xn)*var-x0+xn))
     return out
 
-def x_f(dx_dxi,dx_dlambda,x0,dxis):
-    # Assumes a simple initial grid, where dx~dxi, dy~deta, dz~dzeta
-    initial_xes = [dx_dxi[0]*xi+x0[0],dx_dxi[4]*eta+x0[1],dx_dxi[8]*zeta+x0[2]]
-    initial_xes = [x.subs({t:0}) for x in initial_xes]
-    out = [initial_xes[ind] + 
-           sympy.integrate(dx_dlambda[ind],t) for ind in range(3)]
-    return out
-
-
-def MASA_full_var(x0,xx,ax,fx,Lx,xy,ay,fy,Ly,xz,az,fz,Lz,xt,at,ft,Lt):
-    return (x0+
-            xt*ft(at*sympy.pi*t/Lt)+
-            xx*fx(ax*sympy.pi*xi/Lx)+
-            xy*fy(ay*sympy.pi*eta/Ly)+
-            xz*fz(az*sympy.pi*zeta/Lz))
             
 if __name__ == "__main__":
     eqn = Euler_UCS(MASA_with_pinned_bounds([[0,1],[0,1],[0,1]],nxes=(100,1,1)))
