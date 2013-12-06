@@ -335,7 +335,7 @@ def MASA_solution_full(ranges,nxes=(100,1,1),dxis=(1.,1.,1.),x0=(0.,0.,0.)):
 #    dxes = [float((range_[1]-range_[0]))/(nx-1)
 #            for (range_,nx) in zip(ranges,nxes)]
     prims = [MASA_full_var(**kwargs) for var in range(5)]
-    grid_vels = [.25*vel for vel in prims[2:]]
+    grid_vels = [0.*.25*vel for vel in prims[2:]]
     dx_dxi = dx_dxi_f(dx_dlambda=grid_vels,
                       dx_dxi_0=[dxes[0]/dxis[0],0.,0.,
                                 0.,dxes[1]/dxis[1],0.,

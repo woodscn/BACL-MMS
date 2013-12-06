@@ -321,11 +321,11 @@ def MASA_with_pinned_bounds(ranges,nxes=(100,1,1),
     return out
 
 def MASA_solution_full(ranges,nxes=(100,1,1),dxis=(1.,1.,1.),x0=(0.,0.,0.)):
-    kwargs={'x0':1,
-            'xx':1,'ax':.1,'fx':sympy.sin,'Lx':20.,
-            'xy':0,'ay':.0,'fy':sympy.cos,'Ly':20.,
-            'xz':0,'az':.0,'fz':sympy.cos,'Lz':20.,
-            'xt':0,'at':.0,'ft':sympy.cos,'Lt':20.}
+    kwargs={'x0':1.1,
+            'xx':-.5,'ax':2.,'fx':sympy.sin,'Lx':100.,
+            'xy':0,'ay':2.,'fy':sympy.cos,'Ly':100.,
+            'xz':0,'az':2.,'fz':sympy.cos,'Lz':100.,
+            'xt':-.5,'at':2.,'ft':sympy.cos,'Lt':100.}
     dxes = [1,1,1]
     for ind in range(3):
         try:
