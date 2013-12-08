@@ -51,14 +51,15 @@ class SympyEquation(object):
         out = np.zeros(len(self.sol))
         wrapper = partial(flux_integrate_wrapper,obj=self,ranges=ranges,
                                discs=self.discontinuities)
-        pool = Pool()
-        out_list = []
-        out_list = pool.map(wrapper,range(len(ranges)))
-        pool.close()
-        pool.join()
-        print "done with flux integrals"
+#        pool = Pool()
+#        out_list = []
+#        out_list = pool.map(wrapper,range(len(ranges)))
+#        pool.close()
+#        pool.join()
+        out_list = map(wrapper,range(len(ranges)))
+#        print "done with flux integrals"
         out = out_list + [self.source_integrate(self.source,ranges,discs)]
-        print "done with source integral"
+#        print "done with source integral"
         out = sum(out)
         return out
 def flux_integrate_wrapper(ind,obj,ranges,discs):

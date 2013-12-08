@@ -321,7 +321,7 @@ def MASA_with_pinned_bounds(ranges,nxes=(100,1,1),
     return out
 
 def MASA_solution_full(ranges,nxes=(100,1,1),dxis=(1.,1.,1.),x0=(0.,0.,0.)):
-    kwargs={'x0':1.1,
+    kwargs={'x0':1.1, # = -(xt,xx,xy,xz)+pinned_value
             'xx':-.5,'ax':2.,'fx':sympy.sin,'Lx':100.,
             'xy':0,'ay':2.,'fy':sympy.cos,'Ly':100.,
             'xz':0,'az':2.,'fz':sympy.cos,'Lz':100.,

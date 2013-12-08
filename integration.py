@@ -49,7 +49,7 @@ class IntegrableFunction(object):
         self.args=args
         self.sympy_variables = self.int_variables
         self.function = Integrand(
-            sympy_function,self.sympy_variables,args=self.args).ctypesified
+            sympy_function,self.sympy_variables,args=self.args).lambdified#ctypesified
         self.integrate = self.quad_integrate
 
         # Unpack sympy_discontinuities into a list of points for nquad.
@@ -161,7 +161,7 @@ class Integrand(object):
         self.sympy_variables = sympy_variables
         self.lambdified = lambdify(self.sympy_variables,self.sympy_function)
         clear_cache()
-        print self.sympy_function
+#        print self.sympy_function
         self.generated_code = codegen(
             ('integrand',self.sympy_function),'C','integrand',
             argument_sequence=self.sympy_variables,to_files=True)
