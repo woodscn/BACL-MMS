@@ -325,8 +325,8 @@ def MASA_solution_full(ranges,nxes=(100,1,1),dxis=(1.,1.,1.),x0=(0.,0.,0.)):
             'xx':-.5,'ax':2.,'fx':sympy.sin,'Lx':100.,
             'xy':0,'ay':2.,'fy':sympy.cos,'Ly':100.,
             'xz':0,'az':2.,'fz':sympy.cos,'Lz':100.,
-            'xt':-.5,'at':2.,'ft':sympy.cos,'Lt':100.,
-            'shock_strength':.1,'shock_position':50.}
+            'xt':0,'at':2.,'ft':sympy.cos,'Lt':100.,
+            'shock_strength':.5,'shock_position':50.}
     dxes = [1,1,1]
     for ind in range(3):
         try:
@@ -344,7 +344,7 @@ def MASA_solution_full(ranges,nxes=(100,1,1),dxis=(1.,1.,1.),x0=(0.,0.,0.)):
     xes = x_f(dx_dxi,grid_vels,x0,dxis)
     return {'vars':[t,xi,eta,zeta],
             'sol':sympy.Matrix(prims+dx_dxi+grid_vels+xes),
-            'discontinuities':[],'eqn_kwargs':{}}
+            'discontinuities':[kwargs['shock_position']],'eqn_kwargs':{}}
 
 def dx_dxi_f(dx_dlambda,dx_dxi_0,t0):
     change = [0 for ind in range(9)]
@@ -373,7 +373,7 @@ def MASA_full_var(x0,xx,ax,fx,Lx,xy,ay,fy,Ly,xz,az,fz,Lz,xt,at,ft,Lt,
             xx*fx(ax*sympy.pi*xi/Lx)+
             xy*fy(ay*sympy.pi*eta/Ly)+
             xz*fz(az*sympy.pi*zeta/Lz)+
-            shock_strength*(1 if xi > shock_position else 0))
+            shock_strength*H(xi-shock_position))
             
 if __name__ == "__main__":
     eqn = Euler_UCS(MASA_with_pinned_bounds([[0,1],[0,1],[0,1]],nxes=(100,1,1)))

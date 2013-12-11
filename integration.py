@@ -161,17 +161,18 @@ class Integrand(object):
         self.sympy_variables = sympy_variables
         self.lambdified = lambdify(self.sympy_variables,self.sympy_function)
         clear_cache()
-#        print self.sympy_function
-        self.generated_code = codegen(
-            ('integrand',self.sympy_function),'C','integrand',
-            argument_sequence=self.sympy_variables,to_files=True)
-        cmd = "gcc -dynamiclib -I. integrand.c -o testlib.dylib"
-        subprocess.call(cmd,shell=True)
-        self.ctypeslib = ctypes.CDLL('./testlib.dylib')
-        self.ctypesified = self.ctypeslib.integrand
-        self.ctypesified.argtypes = tuple(
-            [ctypes.c_double for var in self.sympy_variables])
-        self.ctypesified.restype = ctypes.c_double
+# # Enable the use of ctypes objects in nquad, once multivariate ctypes objects
+# # are appropriate arguments for the QUADPACK library functions.
+#        self.generated_code = codegen(
+#            ('integrand',self.sympy_function),'C','integrand',
+#            argument_sequence=self.sympy_variables,to_files=True)
+#        cmd = "gcc -dynamiclib -I. integrand.c -o testlib.dylib"
+#        subprocess.call(cmd,shell=True)
+#        self.ctypeslib = ctypes.CDLL('./testlib.dylib')
+#        self.ctypesified = self.ctypeslib.integrand
+#        self.ctypesified.argtypes = tuple(
+#            [ctypes.c_double for var in self.sympy_variables])
+#        self.ctypesified.restype = ctypes.c_double
         return None
     def __call__(self,*args):
         if len(args) != len(self.sympy_variables):
