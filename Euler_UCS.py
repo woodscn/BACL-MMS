@@ -320,13 +320,16 @@ def MASA_with_pinned_bounds(ranges,nxes=(100,1,1),
         [sol*pinning_eqn + .01 for sol in out['sol'][0:5]]+out['sol'][5:])
     return out
 
-def MASA_solution_full(ranges,nxes=(100,1,1),dxis=(1.,1.,1.),x0=(0.,0.,0.)):
+def MASA_solution_full(ranges,nxes=(100,1,1),dxis=(1.,1.,1.),x0=(0.,0.,0.),
+                       disc=False):
     kwargs={'x0':1.1, # = -(xt,xx,xy,xz)+pinned_value
-            'xx':-.5,'ax':2.,'fx':sympy.sin,'Lx':100.,
+            'xx':.5,'ax':2.,'fx':sympy.cos,'Lx':100.,
             'xy':0,'ay':2.,'fy':sympy.cos,'Ly':100.,
             'xz':0,'az':2.,'fz':sympy.cos,'Lz':100.,
             'xt':0,'at':2.,'ft':sympy.cos,'Lt':100.,
-            'shock_strength':.5,'shock_position':50.}
+            'shock_strength':0.,'shock_position':50.}
+    if disc:
+        kwargs['shock_strength']=1.
     dxes = [1,1,1]
     for ind in range(3):
         try:
@@ -368,12 +371,14 @@ def x_f(dx_dxi,dx_dlambda,x0,dxis):
 
 def MASA_full_var(x0,xx,ax,fx,Lx,xy,ay,fy,Ly,xz,az,fz,Lz,xt,at,ft,Lt,
                   shock_strength,shock_position):
-    return (x0+
+    out = (x0+
             xt*ft(at*sympy.pi*t/Lt)+
             xx*fx(ax*sympy.pi*xi/Lx)+
             xy*fy(ay*sympy.pi*eta/Ly)+
-            xz*fz(az*sympy.pi*zeta/Lz)+
-            shock_strength*H(xi-shock_position))
+            xz*fz(az*sympy.pi*zeta/Lz))
+    if shock_strength != 0.
+         out += shock_strength*H(xi-shock_position))
+    return out
             
 if __name__ == "__main__":
     eqn = Euler_UCS(MASA_with_pinned_bounds([[0,1],[0,1],[0,1]],nxes=(100,1,1)))
