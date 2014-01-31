@@ -1,0 +1,9 @@
+*.[oa]
+*~
+*.mod
+*.dat
+*.mat
+*.out
+*.pyc
+*#
+.DS_Store
