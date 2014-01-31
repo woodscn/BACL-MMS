@@ -2,7 +2,7 @@ import sympy
 from functools import partial
 
 from heat_equation import MASA_solution, HeatEquation, MASA_source_lambda
-from Euler_UCS import Euler_UCS, MASA_solution_E, unsteady_Euler
+from Euler_UCS import Euler_UCS, unsteady_Euler
 
 class Error(Exception):
     pass

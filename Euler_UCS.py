@@ -376,8 +376,8 @@ def MASA_full_var(x0,xx,ax,fx,Lx,xy,ay,fy,Ly,xz,az,fz,Lz,xt,at,ft,Lt,
             xx*fx(ax*sympy.pi*xi/Lx)+
             xy*fy(ay*sympy.pi*eta/Ly)+
             xz*fz(az*sympy.pi*zeta/Lz))
-    if shock_strength != 0.
-         out += shock_strength*H(xi-shock_position))
+    if shock_strength != 0.:
+        out += shock_strength*H(xi-shock_position)
     return out
             
 if __name__ == "__main__":
