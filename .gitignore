@@ -7,3 +7,5 @@
 *.pyc
 *#
 .DS_Store
+*.dylib
+*.so
