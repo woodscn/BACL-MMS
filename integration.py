@@ -1,3 +1,8 @@
+"""
+Useful functions for the generation of valid integration calls from Sympy 
+expressions.
+
+"""
 import sympy
 from sympy.utilities.lambdify import lambdify
 from sympy.utilities.codegen import codegen
@@ -10,65 +15,118 @@ import ctypes
 from functools import partial
 from multiprocessing import Pool
 
-def func_integral(integrand,**kwargs):
+def list_integral(integrands,**kwargs):
+    """
+Map numeric integration to a list of symbolic integrands.
+
+Numerically integrate a list of symbolic integrands over a single range and 
+with a single set of integration options. 
+This is a good spot to implement multiprocessing using Python's 
+multiprocessing module.
+
+Parameters
+----------
+integrands : iterable of sympy expressions
+    List of integrand expressions
+sympy_ranges : iterable 
+    List of ranges and Symbols e.g. ((t,tmin,tmax),(x,xmin,xmax))
+sympy_discontinuities : iterable of sympy expressions, optional
+    List of symbolic discontinuities e.g. (x/t-0.75). The discontinuity is
+    assumed to be at disc == 0, where disc is the sympy expression.
+args : dict
+    Substitution dict for any additional arguments required for evaluation of
+    integrands beyond integration variables given in sympy_ranges.
+integrator : not yet implemented
+    --
+opts : not yet implemented
+    --
+
+Returns
+-------
+iterable of floats
+    Results of the integration of integrands over sympy_ranges.
+"""
+    multi_list_integral = partial(_func_integral,**kwargs)
+    out = map(multi_list_integral,integrands)
+    # # You have to choose where you will apply multiprocessing, either here or
+    # # else in the computation of flux and source integrals. At present, this
+    # # is done at the flux/source level.
+    # pool = Pool()
+    # out = pool.map(multi_list_integral,integrands)
+    # pool.close()
+    # pool.join()
+    return out
+
+def _func_integral(integrand,**kwargs):
+    """
+Necessary wrapper function to enable use of multiprocessing module.
+"""
     out = IntegrableFunction(integrand,**kwargs).integrate()[0]
     return out
 
-def list_integral(integrands,**kwargs):
-    multi_list_integral = partial(func_integral,**kwargs)
-    out = map(multi_list_integral,integrands)
-#    pool = Pool()
-#    out = pool.map(multi_list_integral,integrands)
-#    pool.close()
-#    pool.join()
-    return out
-
-
 class IntegrableFunction(object):
-
     """
-    Inputs:
-      SymPy expression for a possibly vector-valued function
-      SymPy expressions for various discontinuities
-      List of SymPy variables of integration in order e.g. (xi,eta,t)
-        ((xi,0,1),(eta,1.3,1.5),(t,-1,1))
+Short Summary: (delete this heading)
 
-    Outputs:
-      Function that accepts coordinate values and evaluates the input
-      Ranges list for nquad
-      Args list for nquad
-      Opts list for nquad
+Extended Summary: (delete this heading)
+Does not allow much in the way of integration options, only providing 'points'.
 
-    """
+Parameters
+----------
+'sympy_function' : Sympy expression
+    Sympy expression for a possibly vector-valued function.
+'sympy_ranges' : iterable
+    List of Sympy variable ranges in order e.g. ((x,0,1),(y,0,1)).
+'sympy_discontinuities' : Sympy expression, optional
+    Sympy expressions for various discontinuities.
+'args' : iterable, optional
+    Any additional arguments required by sympy_function.
+'integrator' : optional
+    Specify an integration method. Unused at present.
+'opts' : optional
+    Specify function options. Unused at present.
+
+Attributes
+----------
+'int_variables' : iterable
+    List of Sympy Symbols representing the variables of integration.
+'ranges' : iterable
+    List of ranges, of the form ((xmin,xmax),(ymin,ymax),...).
+'function' : lambda or ctypes function 
+    Function with signature f(*int_variables,*args).
+'integrate' : callable
+    Abstracted integration function, currently quadrature.
+"""
 
     def __init__(self,sympy_function,sympy_ranges,sympy_discontinuities=(),
-                 args={},integrator=None):
+                 args={},integrator=None,opts=None):
         self.int_variables,self.min_ranges,self.max_ranges=zip(*sympy_ranges)
         self.int_variables = list(self.int_variables)
         self.ranges = zip(self.min_ranges,self.max_ranges)
         self.args=args
         self.sympy_variables = self.int_variables
         self.function = Integrand(
-            sympy_function,self.sympy_variables,args=self.args).lambdified#ctypesified
+            sympy_function,self.sympy_variables,args=self.args).lambdified
         self.integrate = self.quad_integrate
 
         # Unpack sympy_discontinuities into a list of points for nquad.
 
-        # In order to be used by nquad, discontinuities must be put into a form 
-        # of functions of the integration variables. One-dimensional integration 
-        # effectively smooths a discontinuity, provided the path of integration 
-        # crosses the discontinuity. Effectively, this means that any 
-        # discontinuity will be smoothed by integration over a particular 
-        # variable, provided that the function describing the discontinuity is 
-        # dependent on that variable. An example may help. 
+        # In order to be used by nquad, discontinuities must be put into a
+        # form of functions of the integration variables. One-dimensional 
+        # integration effectively smooths a discontinuity, provided the path 
+        # of integration crosses the discontinuity. Effectively, this means 
+        # that any discontinuity will be smoothed by integration over a 
+        # particular variable, provided that the function describing the 
+        # discontinuity is dependent on that variable. An example may help. 
 
         # Assume three discontinuities: [x = 0, x*y = 1, y-1 = 0]. The form of 
-        # these discontiuities will depend on the order of integration given to 
-        # nquad. If the integration is done as int(int(f(x,y),dx),dy), then 
-        # nquad will need the discontinuities in the form: [[lambda y : 0, 
-        # lambda y : 1/y],[lambda : 1]]. Conversely, if the order of integration 
-        # is reversed to int(int(f(x,y),dy),dx), then the discontinuities must 
-        # be [[lambda x : 1/x, lambda x : 1],[lambda : 0]]. 
+        # these discontiuities will depend on the order of integration given 
+        # to nquad. If the integration is done as int(int(f(x,y),dx),dy), then 
+        # nquad will need the discontinuities in the form: 
+        # [[lambda y : 0, lambda y : 1/y],[lambda : 1]]. 
+        # Conversely, if the order of integration is reversed to 
+        # int(int(f(x,y),dy),dx), then the discontinuities must be
+        #  [[lambda x : 1/x, lambda x : 1],[lambda : 0]]. 
 
         # This segment of code unpacks the list of discontinuities into the 
         # correct form based on the order of integration given by ranges.
@@ -93,34 +151,21 @@ class IntegrableFunction(object):
         return None
     
     def quad_integrate(self):
+        '''
+Integration using scipy.integrate
+'''
         return nquad(self.function,self.ranges,opts=self.opts)
 
     def mc_integrate(self):
         """
-        Evaluate the integral of a function using the Monte Carlo technique.
+Integration using Monte Carlo
 
-        mc_integrate(f,ranges,calls,args=())
-
-        Monte Carlo integration is a robust, though inaccurate, method of
-        integration. mc_integrate evaluates function f ncalls number of 
-        times at random points, and uses the sum of these evaluations to 
-        compute the integral of function f over the rectangular volume 
-        specified by ranges. The error of the integral scales as 
-        1/sqrt(ncalls)
-
-        Inputs:
-          f - Callable that returns a number. Must have at least as many 
-            number arguments as the number of ranges provided.
-          ranges - Sequence of ranges over which to evaluate the integral.
-          ncalls - Number of function samples to take. 
-          args - Any additional arguments required by f
-
-        Example:
-          mc_integrate(f(x,y,z),((0,1),(-.5,.5)),10000,args=3) evaluates
-          the integral of f(x,y,z) over the range x=(0,1), y=(-.5,.5), 
-          at z=3. The function is sampled 10e4 times, and so the error
-          can be expected to be around 0.01.
-        """
+Monte Carlo integration is a robust, though inaccurate, method of integration. 
+mc_integrate evaluates function f ncalls number of times at random points, and 
+uses the sum of these evaluations to compute the integral of function f over 
+the rectangular volume specified by ranges. The error of the integral scales 
+as 1/sqrt(ncalls)
+"""
         f_sum = 0
         for n in xrange(ncalls):
             coords_lst = []
@@ -186,22 +231,51 @@ class Integrand(object):
         clear_cache()
         return out
 
+class IntegrationError(Exception):
+    pass
+
 if __name__=="__main__":
+    import random
     H = sympy.special.delta_functions.Heaviside
     phi, theta, psi = .1, .7, .25
     t=sympy.Symbol('t')
     x=sympy.Symbol('x')
     y=sympy.Symbol('y')
     z=sympy.Symbol('z')
+    vars = t,x,y,z
+    test_args = [random.random() for ind in range(len(vars))]
+    ranges = ((t,.8,1),(x,-1,1),(y,-1,1),(z,-1,1))
+#    S = sympy.functions.Abs(x)/t
     S = x/t
 #    S = (sympy.cos(theta)*xi-sympy.cos(psi)*sympy.sin(theta)*eta+
 #         sympy.sin(theta)*sympy.sin(psi)*zeta)
 #    integrands = [(.5+x**3*t**(-2)-x*y*z)+H(.5-S)+H(.25-S)]
     base_integrand = x**2+y**2-z**2+x*y*z*t+sympy.cos(t)+x*y**3
-    integrands = [sympy.Piecewise((0+base_integrand,S<0),
-                                  (35+base_integrand,True))]
-    test = {'sympy_ranges':((t,.8,1.),(x,-1.,1.),(y,-1.,1.),(z,-1,1)),
-            'sympy_discontinuities':[S]}#,'args':{z:1}}
-    import pdb;pdb.set_trace()
-    print "ctypes"+str(IntegrableFunction(integrands[0],**test).integrate())
-#    print "lambda"+str(IntegrableFunction(integrands[0],**test).integrate())
+    integrand = sympy.Piecewise((0+base_integrand,S<0),
+                                  (1+base_integrand,True))
+    # Sympy has a bug that prevents this integral from being evaluated 
+    # correctly. This value comes from Mathematica.
+    # The Mathematica code for this is:
+    # ranges = {{t, 8/10, 1}, {x, -1, 1}, {y, -1, 1}, {z, -1, 1}};
+    # S = x/t;
+    # eq = x^2 + y^2 - z^2 + x y z t + Cos[t] + x y^3 + 
+    # Piecewise[{{0, S < 0}}, 1];
+    # N[Integrate[eq, ranges[[1]], ranges[[2]], ranges[[3]], 
+    #             ranges[[4]]], 20]
+    exact_integral = 2.3262524846003232935 #sympy.N( 
+    #        sympy.integrate(
+    #            sympy.integrate(
+    #                sympy.integrate(
+    #                    sympy.integrate(integrands[0],ranges[0])
+    #                    ,ranges[1])
+    #                ,ranges[2])
+    #            ,ranges[3])
+    #        )    
+    test = {'sympy_ranges':ranges,'sympy_discontinuities':[S]}#,'args':{z:1}}
+    if (abs(IntegrableFunction(integrand,**test).integrate()[0]-exact_integral)
+        >1d-14):
+        raise IntegrationError("Nquad integration fails for lambda function!")
+    ## Ctypes functionality is dependent on improvements to nquad that aren't
+    ## yet available.
+    # print "ctypes"+str(IntegrableFunction(integrands[0],**test).integrate())
+    
