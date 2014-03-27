@@ -177,20 +177,9 @@ random_heat_exact.dat : ASCII file
     f.write('%problem #, theta(deg), phi(deg), A, B, C, mu, a, source')
     ranges = ((t,0.,1.),(x,-.5,.5),(y,-.5,.5),(z,-.5,.5))
     random.seed(100)
+    S_prime_list = []
     for n in range(ntests):
         n_choices = [0,1,2,3,4,5,6,7]
-#        theta_choices = [.05*numpy.pi*range_ for range_ in range(11)]
-#        phi_choices  = theta_choices
-#        A_choices = [.001, .01, .1, 1., 10., 100., 1000.]
-#        B_choices = A_choices
-#        C_choices = [.2*range_ for range_ in range(6)]
-#        mu_choices = [0, .5, 1., 1.5, 2., 2.5, 3.0]
-#        a_choices = [.001, .01, .1, 1., 10.]
-#        
-#        n,theta,phi,A,B,C,mu,a = [random.choice(choices) for choices in 
-#                                  [n_choices,theta_choices,phi_choices,
-#                                   A_choices,B_choices,C_choices,
-#                                   mu_choices,a_choices]]
         theta_min, theta_max = 0, numpy.pi*.5
         phi_min, phi_max = 0, numpy.pi*.5
         A_min, A_max = 0.001, 1000
@@ -199,19 +188,24 @@ random_heat_exact.dat : ASCII file
         mu_min, mu_max = 0, 3
         a_min, a_max = 0.001, 10
         n,theta,phi,A,B,C,mu,a = [random.choice(n_choices),
-                                  random.random()*numpy.pi*0.5,
-                                  random.random()*numpy.pi*0.5,
-                                  10**(random.random()*6-3),
-                                  10**(random.random()*6-3),
-                                  random.random(),
-                                  random.random()*3,
-                                  10**(random.random()*4-3)
+                                  random.random()*(theta_max-theta_min),
+                                  random.random()*(phi_max-phi_min),
+                                  10**(random.random()*(numpy.log10(A_max)
+                                                        -numpy.log10(A_min))
+                                       +numpy.log10(A_min)),
+                                  10**(random.random()*(numpy.log10(B_max)
+                                                        -numpy.log10(B_min))
+                                       +numpy.log10(A_min)),
+                                  random.random()*(C_max-C_min),
+                                  random.random()*(mu_max-mu_min),
+                                  10**(random.random()*(numpy.log10(a_max)
+                                                        -numpy.log10(a_min))
+                                       +numpy.log10(a_min))
                                   ]
-    #    print n,theta/numpy.pi*180,phi/numpy.pi*180,A,B,C,mu,a
         sol = heat_exact_sol(n=n,theta=theta,phi=phi,A=A,B=B,C=C,mu=mu,a=a)
         try:
             S_prime = HeatEquation(sol).balance_integrate(ranges)
-        #    print n,theta/numpy.pi*180,phi/numpy.pi*180,A,B,mu,a,S_prime
+            S_prime_list.append(S_prime)
             f.write('\n'+', '.join([str(item) for item in 
                                     (n,theta/numpy.pi*180,phi/numpy.pi*180,
                                      A,B,C,mu,a,S_prime[0])]))
@@ -219,29 +213,21 @@ random_heat_exact.dat : ASCII file
             print "Overflow Error!"
             print ('n = ',n,'theta = ',theta,'phi = ',phi,
                    'A = ',A,'B = ',B,'C = ',C,'mu = ',mu,'a = ',a)
-            
     f.close()
-    
+    return S_prime_list
 
-#    import matplotlib
-#    import matplotlib.pyplot as plt
-#    nx = 25
-#    tests = zip(*heat_exact_tests([[t,0,1],[x,0,1],[y,0,1],[z,0,1]],nx))
-#    eqns = tests.pop(0)
-#    angles = tests.pop(0)
-#    angles = [angle.evalf() for angle in angles[0]]
-#    tests = list(tests[0])
-#    for sol in tests:
-#        plt.plot(angles,sol)
-#    plt.show()
-
-
+class HeatEquationError(Exception):
+    pass
 
 if __name__=="__main__":
-#    sol = heat_exact_sol(n=1,theta=0,phi=0,A=1,B=1,C=1,mu=1,a=1)
-#    sol = MASA_solution(1,1,1,1,1,1,1,1,1,1)
-#    S_prime = HeatEquation(sol).balance_diff()
-#    print S_prime[0] == MASA_source(1,1,1,1,1,1,1,1,1,1)
-#    import pdb;pdb.set_trace()
-    test_exact(100)
-    print "done"
+    S_prime_list = test_exact(100)
+    S_prime_log = [numpy.log10(numpy.abs(S)) for S in S_prime_list]
+    high_error_ratio = (len([S for S in S_prime_log if S > -10])
+                        /float(len(S_prime_log)))
+    if high_error_ratio > 0.01:
+        raise HeatEquationError('Unexpectedly high error in heat equation!')
+    # You can load random_heat_exact.dat in Matlab to create a parallel
+    # coordinates plot of the error.
+    # If you run enough tests, you do find some odd explosions of error for 
+    # some cases. These are few (0.33% for 1000 cases with given seed).
+    print "All Heat Equation tests passed!"
