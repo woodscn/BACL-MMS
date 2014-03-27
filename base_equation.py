@@ -1,3 +1,7 @@
+"""
+Base equation class, intended to be subclassed for specific systems of 
+equations, such as the linear heat equation, the Euler equations, and so on.
+"""
 import sympy
 from sympy.utilities.lambdify import lambdify
 import numpy as np

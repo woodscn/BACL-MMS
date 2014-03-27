@@ -273,7 +273,7 @@ if __name__=="__main__":
     #        )    
     test = {'sympy_ranges':ranges,'sympy_discontinuities':[S]}#,'args':{z:1}}
     if (abs(IntegrableFunction(integrand,**test).integrate()[0]-exact_integral)
-        >1d-14):
+        >1e-14):
         raise IntegrationError("Nquad integration fails for lambda function!")
     ## Ctypes functionality is dependent on improvements to nquad that aren't
     ## yet available.
