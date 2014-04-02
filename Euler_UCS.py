@@ -1,7 +1,14 @@
+"""
+Tools for computing manufactured solutions for Euler equations expressed in 
+Hui's Unified Coordinate System.
+"""
+import random
+import numpy
 import sympy
 from sympy.utilities.lambdify import lambdify
 H = sympy.special.delta_functions.Heaviside
 from sympy import sin, cos
+from functools import partial
 
 from base_equation import SympyEquation
 
@@ -118,12 +125,34 @@ class Euler_UCS(SympyEquation):
         return sympy.Matrix([0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
                 self.dx_dt,self.dy_dt,self.dz_dt])
 
-def unsteady_Euler(case):
+def exact_Euler_sols(case,opts={}):
+    """
+Various exact solutions for the Euler equations in Cartesian coordinates. 
+
+Returns solution objects for various exact solutions of the unsteady, Euler
+equations. Includes both normal shocks and riemann problems.
+
+Parameters
+----------
+case : string
+    Key to cases dict. Can be 'normal' or 'riemann_problem'.
+opts : dict, optional
+    Additional solution options. Currently only chooses among riemann problems,
+    and solution rotations. The riemann problem is set by the 'set_riemann' 
+    key, and the rotation angles are set by 'phi' and 'theta'. Rotation angles
+    are used only  by 'riemann_problem'.
+
+Returns
+-------
+dict
+    
+"""
     cases = {'simple':simple_case,
-             'two_shock':two_shock_case,
-#             'one_shock':one_shock_case,
+#             'two_shock':two_shock_case,
              'normal':normal_case,
-             'riemann_problem':riemann_problem_case}
+             'riemann_problem':partial(riemann_problem_case,
+                                       opts['set_riemann'],opts['theta'],
+                                       opts['phi'])}
     out = {'vars':[t,xi,eta,zeta],'eqn_kwargs':{}}
     out.update(cases[case]())
     return out
@@ -157,45 +186,45 @@ def normal_case():
            'discontinuities':[S-speed for speed in speeds]}
     return out
 
-def two_shock_case():
-    speeds = [0.78959391926443701,8.6897744116323814,12.250778123084338]
-    phi, theta = 0.,sympy.pi*.1#sympy.pi*.5, sympy.pi*.25
-    S = (sympy.cos(theta)*xi+
-         sympy.sin(theta)*sympy.cos(phi)*eta+
-         sympy.sin(theta)*sympy.sin(phi)*zeta)/t
-    yz_rotation_matrix = sympy.Matrix(
-        [[sympy.cos(theta),0,0],
-         [sympy.sin(theta)*sympy.cos(phi),0,0],
-         [sympy.sin(theta)*sympy.sin(phi),0,0]])
-    
-#    S = yz_rotation_matrix.dot(sympy.Matrix([xi,eta,zeta]))[0]/t
-    states = [sympy.Matrix([460.89400000000001,5.99924000000000000004,
-                            19.597500000000000,0.,0.]),
-              sympy.Matrix([1691.6469553991260,14.282349951978405,
-                            8.6897744116323814,0.,0.]),
-              sympy.Matrix([1691.6469553991260,31.042601641619882,
-                            8.6897744116323814,0.,0.]),
-              sympy.Matrix([46.09499999999999,5.99242000000000001,
-                            -6.19632999999997,0.,0.])]
-    for state in states:
-        vel = sympy.Matrix([state[2],state[3],state[4]])
-        new_vel = yz_rotation_matrix.dot(vel)
-        state[2],state[3],state[4] = new_vel
-    base_state = [1.,0.,0.,0.,1.,0.,0.,0.,1.,0.,0.,0.,0.,0.,0.]
-    out = {'sol':sympy.Matrix(
-            list(
+#def two_shock_case():
+#    speeds = [0.78959391926443701,8.6897744116323814,12.250778123084338]
+#    phi, theta = 0.,sympy.pi*.1#sympy.pi*.5, sympy.pi*.25
+#    S = (sympy.cos(theta)*xi+
+#         sympy.sin(theta)*sympy.cos(phi)*eta+
+#         sympy.sin(theta)*sympy.sin(phi)*zeta)/t
+#    yz_rotation_matrix = sympy.Matrix(
+#        [[sympy.cos(theta),0,0],
+#         [sympy.sin(theta)*sympy.cos(phi),0,0],
+#         [sympy.sin(theta)*sympy.sin(phi),0,0]])
+#    
+##    S = yz_rotation_matrix.dot(sympy.Matrix([xi,eta,zeta]))[0]/t
+#    states = [sympy.Matrix([460.89400000000001,5.99924000000000000004,
+#                            19.597500000000000,0.,0.]),
+#              sympy.Matrix([1691.6469553991260,14.282349951978405,
+#                            8.6897744116323814,0.,0.]),
+#              sympy.Matrix([1691.6469553991260,31.042601641619882,
+#                            8.6897744116323814,0.,0.]),
+#              sympy.Matrix([46.09499999999999,5.99242000000000001,
+#                            -6.19632999999997,0.,0.])]
+#    for state in states:
+#        vel = sympy.Matrix([state[2],state[3],state[4]])
+#        new_vel = yz_rotation_matrix.dot(vel)
+#        state[2],state[3],state[4] = new_vel
+#    base_state = [1.,0.,0.,0.,1.,0.,0.,0.,1.,0.,0.,0.,0.,0.,0.]
+#    out = {'sol':sympy.Matrix(
+#            list(
+##                (1-H(S-speeds[0]))*states[0]+
+##                H(S-speeds[0])*states[1])+base_state),
 #                (1-H(S-speeds[0]))*states[0]+
-#                H(S-speeds[0])*states[1])+base_state),
-                (1-H(S-speeds[0]))*states[0]+
-                H(S-speeds[0])*(1-H(S-speeds[1]))*states[1]+
-                H(S-speeds[1])*(1-H(S-speeds[2]))*states[2]+
-                H(S-speeds[2])*states[3])+base_state),
-           'discontinuities':[S-speed for speed in speeds]}
-    return out
+#                H(S-speeds[0])*(1-H(S-speeds[1]))*states[1]+
+#                H(S-speeds[1])*(1-H(S-speeds[2]))*states[2]+
+#                H(S-speeds[2])*states[3])+base_state),
+#           'discontinuities':[S-speed for speed in speeds]}
+#    return out
 
-def riemann_problem_case():
-    n = 4
-    theta, phi = sympy.pi*.5, 0.
+def riemann_problem_case(n,theta,phi):
+#    n = 4
+#    theta, phi = sympy.pi*.5, 0.
     tests = riemann_problem_init()
     states,speeds = ([sympy.Matrix(state) for state in tests[n]['states']],
                      tests[n]['speeds'])
@@ -322,6 +351,9 @@ def MASA_with_pinned_bounds(ranges,nxes=(100,1,1),
 
 def MASA_solution_full(ranges,nxes=(100,1,1),dxis=(1.,1.,1.),x0=(0.,0.,0.),
                        disc=False):
+    """
+Manufactured solution as given in MASA documentation for Euler equations.
+"""
     kwargs={'x0':1.1, # = -(xt,xx,xy,xz)+pinned_value
             'xx':.5,'ax':2.,'fx':sympy.cos,'Lx':100.,
             'xy':0,'ay':2.,'fy':sympy.cos,'Ly':100.,
@@ -380,9 +412,53 @@ def MASA_full_var(x0,xx,ax,fx,Lx,xy,ay,fy,Ly,xz,az,fz,Lz,xt,at,ft,Lt,
         out += shock_strength*H(xi-shock_position)
     return out
             
+def test_riemann(ntests):
+    """
+Test the accuracy of numerical integration of the Euler equations.
+
+Compute weak manufactured source terms from exact, discontinuous, solutions 
+for the Euler equations. In particular, use a collection of exact, 
+one-dimensional Riemann problems, rotated so as to be three-dimensional. 
+
+Parameters
+----------
+ntests : int
+    Number of random trials to compute.
+
+Returns
+-------
+random_euler_riemann.dat : ASCII file
+    Contains solution parameters and corresponding source term values.
+"""
+    f = open('random_euler_riemann.dat','w')
+    f.write('%problem #, theta(deg), phi(deg), '
+            +'source_rho, source_p, source_u, source_v, source_w')
+    ranges = [[t,0.1,1],[xi,-1,1],[eta,-1,1],[zeta,-1,1]]
+    random.seed(100)
+    S_prime_list = []
+    for indn in range(ntests):
+        n_choices = [0,1,2,3,4]
+        theta_min, theta_max = 0, numpy.pi*0.5
+        phi_min, phi_max = 0, numpy.pi*0.5
+        n,theta,phi = [random.choice(n_choices),
+                       random.random()*(theta_max-theta_min),
+                       random.random()*(phi_max-phi_min)]
+        opts = {'set_riemann':n,'theta':theta,'phi':phi}
+        sol = exact_Euler_sols('riemann_problem',opts)
+        S_prime = Euler_UCS(sol).balance_integrate(ranges)
+        S_prime_list.append(S_prime)
+        f.write('\n'+', '.join([str(item) for item in (
+                        n,theta/numpy.pi*180,phi/numpy.pi*180,
+                        S_prime[0],S_prime[1],S_prime[2],
+                        S_prime[3],S_prime[4])]))
+    f.close()
+    return S_prime_list
 if __name__ == "__main__":
-    eqn = Euler_UCS(MASA_with_pinned_bounds([[0,1],[0,1],[0,1]],nxes=(100,1,1)))
-    print eqn.balance_diff()[0]
-    out = eqn.balance_lambda_init()
+    S_prime_list = test_riemann(1)
+
+
+#    eqn = Euler_UCS(MASA_with_pinned_bounds([[0,1],[0,1],[0,1]],nxes=(100,1,1)))
+#    print eqn.balance_diff()[0]
+#    out = eqn.balance_lambda_init()
     import pdb;pdb.set_trace()
     
