@@ -178,7 +178,7 @@ random_heat_exact.dat : ASCII file
     ranges = ((t,0.,1.),(x,-.5,.5),(y,-.5,.5),(z,-.5,.5))
     random.seed(100)
     S_prime_list = []
-    for n in range(ntests):
+    for indn in range(ntests):
         n_choices = [0,1,2,3,4,5,6,7]
         theta_min, theta_max = 0, numpy.pi*.5
         phi_min, phi_max = 0, numpy.pi*.5
