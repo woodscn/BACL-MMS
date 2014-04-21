@@ -9,6 +9,7 @@ from sympy.utilities.codegen import codegen
 from sympy.utilities.autowrap import autowrap
 from sympy.core.cache import clear_cache
 from scipy.integrate import nquad
+H = sympy.special.delta_functions.Heaviside
 import numpy
 import subprocess
 import ctypes
@@ -279,3 +280,10 @@ if __name__=="__main__":
     ## yet available.
     # print "ctypes"+str(IntegrableFunction(integrands[0],**test).integrate())
     
+    # I'm updating the test cases for use with discontinuities. 
+    print "Starting new test case"
+    S = x*y*z*t - 0.25
+    integrand = 1 - H(S)
+    ranges = [[x,0,1],[y,0,1],[z,0,1],[t,0,1]]
+    test = {'sympy_ranges':ranges,'sympy_discontinuities':[S]}
+    print IntegrableFunction(integrand,**test).integrate()
