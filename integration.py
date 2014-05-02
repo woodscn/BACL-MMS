@@ -13,6 +13,7 @@ H = sympy.special.delta_functions.Heaviside
 import numpy
 import subprocess
 import ctypes
+import itertools
 from functools import partial
 from multiprocessing import Pool
 
@@ -97,10 +98,13 @@ Attributes
     Function with signature f(*int_variables,*args).
 'integrate' : callable
     Abstracted integration function, currently quadrature.
+'symbolic_discontinuities' : iterable
+    List of symbolic expressions for discontinuities.
 """
 
     def __init__(self,sympy_function,sympy_ranges,sympy_discontinuities=(),
                  args={},integrator=None,opts=None):
+        self.sympy_ranges = sympy_ranges
         self.int_variables,self.min_ranges,self.max_ranges=zip(*sympy_ranges)
         self.int_variables = list(self.int_variables)
         self.ranges = zip(self.min_ranges,self.max_ranges)
@@ -135,20 +139,18 @@ Attributes
         int_variables_init = list(self.int_variables)
         discs = list(sympy_discontinuities)
         self.opts = []
-        for var in self.int_variables:
-            points = []
-            int_variables_init.remove(var)
-            for disc in discs[:]:
-                solved = sympy.solve(disc,var)
-                if len(solved) > 0: # does disc depend on var?
-                    for solve in solved: # add disc to points.
-                        points.append(DiscFunction(solve,int_variables_init,
-                                                   args=self.args))
-                    discs.remove(disc)
-            if len(points) > 0:
-                self.opts.append(OptionsDict(points))
-            else:
-                self.opts.append({})
+        discontinuity_list = disc_list_constructor(
+            [Discontinuity(disc,self.sympy_ranges) for disc in discs])
+        self.opts = []
+        self.symbolic_discontinuities = []
+        vars = list(self.sympy_variables)
+        for level in discontinuity_list:
+            vars.pop(0)
+            self.symbolic_discontinuities.append(
+                [solved for solved in level])
+            self.opts.append(
+                OptionsDict([DiscFunction(solved.as_real_imag()[0],vars)
+                             for solved in level]))
         return None
     
     def quad_integrate(self):
@@ -182,6 +184,111 @@ class OptionsDict(object):
         self.points = points
     def __call__(self,*args):
         return {"points":[point(*args) for point in self.points]}
+
+class Discontinuity(object):
+    """
+Representation of a solution discontinuity
+
+Parameters
+----------
+'disc' : Sympy object
+    symbolic representation of the discontinuity as a level-set function
+'ranges' : iterable
+    List of "range-style" lists, of the form [[x, xmin, xmax],...] where "x" 
+    is a sympy variable, and xmin & xmax are floats. Order matters, and 
+    eventual integration will assume that the 0-th element is the innermost 
+    integral, and so on.
+'args' : dict
+    Any relevant arguments not contained in 'ranges', e.g. {z:1.101,...} where
+    the dict keys must be sympy variables.
+'opts' : optional
+    Specify additional options. Unused at present.
+
+Attributes
+----------
+'sym' : 
+    List of symbolic expressions for discontinuities to be used in various 
+    levels of integration, ordered inner-most to outermost.
+'func' :
+    List of python lambda function representations of 'sym'.
+
+Methods
+-------
+'nquad_points'
+    Return appropriate DiscFunction objects for high-performance integration in
+    nquad.
+      
+    """
+    def __init__(self,disc,ranges,args={},opts={}):
+        self.disc = disc
+        self.ranges = ranges
+        self.args = args
+        self.opts = opts
+        self.vars = zip(*ranges)[0]
+        self._local_extrema()
+    
+    def _local_extrema(self):
+        """
+Parameters
+----------
+'disc' : Sympy expression
+    Sympy expression f representing discontinuities as f = 0.
+'vars' : iterable
+    List of sympy variables of integration, in order.
+
+Returns : iterable
+    List of lists of sympy expressions for the points where local extrema are 
+    to be found.
+
+        """
+        disc_normal = [sympy.diff(self.disc,var) for var in self.vars]
+        disc_normal_magnitude_squared = sum([item**2 for item in disc_normal])
+        sols = []
+        # Compute symbolic expressions for discontinuous points
+        for inda in range(len(disc_normal)):
+            eqns = [disc_normal[ind] for ind in range(len(disc_normal)-1-inda)]
+            eqns.append(self.disc)
+            try:
+                sols.append([sol[self.vars[-1-inda]] for sol in
+                             sympy.solve(eqns,self.vars[:len(self.vars)-inda],
+                                         dict=True)])
+            except(KeyError):
+                sols.append([])
+        temp = []
+        for sol in sols:
+            try:
+                temp.append(sol)
+            except(IndexError):
+                # Don't worry about it if 'sol' is empty.
+                pass
+        temp.reverse()
+        # Compute DiscFunction objects. I'm only interested in real values.
+        self.sym = temp
+#        import pdb;pdb.set_trace()
+#        self.disc_fs = [[DiscFunction(sol.as_real_imag()[0],self.vars[ind+1:])
+#                         for sol in sols] for sols in temp]
+#        self.sym = [[sol for sol in sols] for sols in temp]
+#        # Convert symbolic expressions to python lambda functions
+#        self.func = [[lambdify(self.vars[ind+1:],point) for point in points] 
+#                     for ind,points in enumerate(self.sym)]
+        return None
+
+def disc_list_constructor(discs):
+    # Discs is a list of Discontinuity objects, each of which has a sym
+    # attribute, which is a list of lists of symbolic point functions.
+    # I eventually need a function that returns a list of points for each 
+    # level of integration, which means I need to concatenate the innermost
+    # lists for each discontinuity, leaving me with a list of lists of
+    # symbolic functions, [f(x1,...xn),f(x2,...xn),...f(xn)] that each 
+    # contains one or more symbolic expressions of points.
+    discontinuities = []
+    # Assume each disc is the same length.
+    for level in range(len(discs[0].sym)): # For each level of integration.
+        # List of discs for a given level
+        discontinuities.append(list(
+                itertools.chain.from_iterable(
+                    [disc.sym[level] for disc in discs])))
+    return discontinuities
 
 
 class DiscFunction(object):
@@ -239,11 +346,22 @@ if __name__=="__main__":
     import random
     H = sympy.special.delta_functions.Heaviside
     phi, theta, psi = .1, .7, .25
-    t=sympy.Symbol('t')
-    x=sympy.Symbol('x')
-    y=sympy.Symbol('y')
-    z=sympy.Symbol('z')
+    t=sympy.Symbol('t',real=True)
+    x=sympy.Symbol('x',real=True)
+    y=sympy.Symbol('y',real=True)
+    z=sympy.Symbol('z',real=True)
     vars = t,x,y,z
+    ranges = ((x,-1.5,1.5),(y,-1.5,1.5),(z,-1.5,1.5),(t,-1.5,1.5))
+    test = [Discontinuity(x**2+y**2+z**2+t**2-1,ranges),
+            Discontinuity(x/t,ranges)]
+    test1 = disc_list_constructor(test)
+    opts = []
+    vars = [x,y,z,t]
+    for level in test1:
+        vars.pop(0)
+        opts.append(OptionsDict([DiscFunction(solved.as_real_imag()[0],vars)
+                     for solved in level]))
+    vars = [t,x,y,z]
     test_args = [random.random() for ind in range(len(vars))]
     ranges = ((t,.8,1),(x,-1,1),(y,-1,1),(z,-1,1))
 #    S = sympy.functions.Abs(x)/t
@@ -258,7 +376,7 @@ if __name__=="__main__":
     # correctly. This value comes from Mathematica.
     # The Mathematica code for this is:
     # ranges = {{t, 8/10, 1}, {x, -1, 1}, {y, -1, 1}, {z, -1, 1}};
-    # S = x/t;
+   # S = x/t;
     # eq = x^2 + y^2 - z^2 + x y z t + Cos[t] + x y^3 + 
     # Piecewise[{{0, S < 0}}, 1];
     # N[Integrate[eq, ranges[[1]], ranges[[2]], ranges[[3]], 
@@ -282,8 +400,11 @@ if __name__=="__main__":
     
     # I'm updating the test cases for use with discontinuities. 
     print "Starting new test case"
-    S = x*y*z*t - 0.25
+    S = t**2+x**2+y**2+z**2 - 0.25
     integrand = 1 - H(S)
-    ranges = [[x,0,1],[y,0,1],[z,0,1],[t,0,1]]
+    ranges = [[t,-1,1],[x,-1,1],[y,-1,1],[z,-1,1]]
+    Discontinuity(S,ranges)
     test = {'sympy_ranges':ranges,'sympy_discontinuities':[S]}
-    print IntegrableFunction(integrand,**test).integrate()
+    test = IntegrableFunction(integrand,**test)
+    import pdb;pdb.set_trace()
+    print test.integrate()
