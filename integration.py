@@ -100,6 +100,7 @@ Attributes
     Abstracted integration function, currently quadrature.
 'symbolic_discontinuities' : iterable
     List of symbolic expressions for discontinuities.
+
 """
 
     def __init__(self,sympy_function,sympy_ranges,sympy_discontinuities=(),
@@ -139,8 +140,10 @@ Attributes
         int_variables_init = list(self.int_variables)
         discs = list(sympy_discontinuities)
         self.opts = []
-        discontinuity_list = disc_list_constructor(
-            [Discontinuity(disc,self.sympy_ranges) for disc in discs])
+#        discontinuity_list = disc_list_constructor(
+#            [Discontinuity(disc,self.sympy_ranges) for disc in discs])
+        discs = Discontinuities(sympy_discontinuities,self.sympy_ranges)
+        discontinuity_list = discs.ordered_discs
         self.opts = []
         self.symbolic_discontinuities = []
         vars = list(self.sympy_variables)
@@ -184,6 +187,7 @@ class OptionsDict(object):
         self.points = points
     def __call__(self,*args):
         return {"points":[point(*args) for point in self.points]}
+
 
 class Discontinuity(object):
     """
@@ -265,10 +269,14 @@ Notes
                 for lim in [varmax, varmin]:
                     new_discs_for_this_level.append(
                         Discontinuity(self.discs[ind][inda].subs({var:lim}),
-                                      ranges[ind+1:]))
+                                      self.ranges[ind+1:]))
                     # This returns all solutions. I need a way to eliminate
                     # the imaginary ones.
             out.append(new_discs_for_this_level)
+        # Spawn any new discontinuities
+        for level in out[:-1]: # The last level can't spawn discontinuities.
+            temp = [disc.spawn() for disc in level]
+        import pdb;pdb.set_trace()
         self.spawn_output = out
         self.has_spawned = True
         return self.spawn_output
@@ -449,9 +457,10 @@ critical point that must be accounted for.
                   ]
         levels = []
         levels.append(self._disc_list_constructor(self.list_of_discs))
-        no_levels = max([len(spawn) for spawn in spawns])
-        for level in spawns:
-            levels.append(self._disc_list_constructor(level))
+        if spawns: # Ignore this if spawns is an empty list.
+            no_levels = max([len(spawn) for spawn in spawns])
+            for level in spawns:
+                levels.append(self._disc_list_constructor(level))
         # Okay, it works up till here. Now I need to re-group again.
         out = []
         for indlvl in range(len(levels)):
@@ -460,6 +469,21 @@ critical point that must be accounted for.
             # flatten these lists
             level[:] = [item for sublist in level for item in sublist]
         # FINALLY!
+        self.ordered_discs = [[sympy.simplify(disc) for disc in level] 
+                              for level in out]
+        # Eliminate duplicates
+        out = []
+        for level in self.ordered_discs:
+            out.append(list(set(level)))
+            for ind, disc in enumerate(out[-1]):
+                for inda in range(len(out[-1])-ind):
+                    if (ind != inda and 
+                            sympy.Equivalent(
+                            sympy.simplify(disc-out[-1][inda]),0)==True):
+                        print "Found duplicate entry in Discontinuities!"
+                        import pdb;pdb.set_trace()
+        self.ordered_discs = out
+        return None
 
     def _disc_list_constructor(self,discs):
         # Discs is a list of Discontinuity objects, each of which has a sym
@@ -490,7 +514,8 @@ class DiscFunction(object):
         if len(args) != len(self.other_sympy_vars):
             print 'args = ',args
             print 'expected args = ',self.other_sympy_vars
-            raise Error('Error in DiscFunction call! Invalid args list!')
+            import pdb;pdb.set_trace()
+            raise IntegrationError('Error in DiscFunction call! Invalid args list!')
         out = self.lambdified(*args)
         clear_cache()
         return out
@@ -567,10 +592,38 @@ lower-level non-boundary discontinuities!
 """)
     # Check that discontinuities that result from an intersection with a 
     # boundary are also generated correctly.
+            import pdb;pdb.set_trace()
     test2 = test.spawn()
     # I need some check solutions here, I guess.
-    test3 = Discontinuities(test_discs,ranges)
     import pdb;pdb.set_trace()
+    test3 = Discontinuities(test_discs,ranges)
+    test3a = []
+    for sol in test3.ordered_discs:
+        test3a.extend(sol)
+    # I'm going to try to test by integrating the function and comparing 
+    # results with Mathematica.
+    sol3 = [[sympy.sqrt(1-y**2-z**2),-sympy.sqrt(1-y**2-z**2),
+             sympy.sqrt(0.25-y**2-z**2),-sympy.sqrt(0.25-y**2-z**2)],
+            [sympy.sqrt(1-z**2),-sympy.sqrt(1-z**2),
+             sympy.sqrt(15./16.-z**2),-sympy.sqrt(15./16.-z**2),
+             sympy.sqrt(1./4.-z**2),-sympy.sqrt(1./4.-z**2),
+             sympy.sqrt(3./16.-z**2),-sympy.sqrt(3./16.-z**2)],
+            [sympy.sqrt(1.),-sympy.sqrt(1.),
+             sympy.sqrt(15./16.),-sympy.sqrt(15./16.),
+             sympy.sqrt(7./8.),-sympy.sqrt(7./8.),
+             sympy.sqrt(1./4.),-sympy.sqrt(1./4.),
+             sympy.sqrt(3./16.),-sympy.sqrt(3./16.),
+             sympy.sqrt(1./8.),-sympy.sqrt(1./8.)]]
+    sol3a = []
+    for sol in sol3:
+        sol3a.extend(sol)
+    import pdb;pdb.set_trace()
+    test4 = IntegrableFunction(H(test_discs[1])-H(test_discs[0]),
+                               ranges,test_discs)
+    # This test takes forever. Do not run as a matter of course.
+    test5 = test4.quad_integrate()
+    import pdb;pdb.set_trace()
+
     phi, theta, psi = .1, .7, .25
     t=sympy.Symbol('t',real=True)
     x=sympy.Symbol('x',real=True)
@@ -579,19 +632,8 @@ lower-level non-boundary discontinuities!
     vars = t,x,y,z
     test = [Discontinuity(x**2+y**2+z**2+t**2-1,ranges),
             Discontinuity(x/t,ranges)]
-    test[0].spawn()
-    import pdb;pdb.set_trace()
-    test1 = disc_list_constructor(test)
-    opts = []
-    vars = [x,y,z,t]
-    for level in test1:
-        vars.pop(0)
-        opts.append(OptionsDict([DiscFunction(solved.as_real_imag()[0],vars)
-                     for solved in level]))
-    vars = [t,x,y,z]
     test_args = [random.random() for ind in range(len(vars))]
     ranges = ((t,.8,1),(x,-1,1),(y,-1,1),(z,-1,1))
-#    S = sympy.functions.Abs(x)/t
     S = x/t
 #    S = (sympy.cos(theta)*xi-sympy.cos(psi)*sympy.sin(theta)*eta+
 #         sympy.sin(theta)*sympy.sin(psi)*zeta)
