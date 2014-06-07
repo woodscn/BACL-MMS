@@ -128,8 +128,23 @@ class Discontinuities(object):
             level[:] = new_level
         return out
 
+    class NQuadDiscFunction(object):
+        def __init__(self,level):
+            self.level = level
+        def __call__(self,*args):
+            out = []
+            for disc in self.level:
+                try:
+                    out.extend(disc(*args))
+                except(ValueError):
+                    out.extend([])
+            return out
+
     def nquad_disc_functions(self):
-        pass
+        out = [self.NQuadDiscFunction(level) for level in self.leveled_discs]
+        import pdb;pdb.set_trace()
+        return out
+        
 
 def empty(seq): # Thanks StackOverflow!
     # See: http://stackoverflow.com/questions/1593564/
