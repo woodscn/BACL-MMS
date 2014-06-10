@@ -433,12 +433,12 @@ random_euler_riemann.dat : ASCII file
     f = open('random_euler_riemann.dat','w')
     f.write('%problem #, theta(deg), phi(deg), '
             +'source_rho, source_p, source_u, source_v, source_w')
-    ranges = [[t,0.1,1],[xi,-1,1]]#,[eta,-1,1],[zeta,-1,1]]
+    ranges = [[t,0.1,1],[xi,-1,1],[eta,-1,1]]#,[zeta,-1,1]]
     random.seed(100)
     S_prime_list = []
     for indn in range(ntests):
         n_choices = [0,1,2,3,4]
-        theta_min, theta_max = 0, 0#numpy.pi*0.5
+        theta_min, theta_max = 0, numpy.pi*0.5
         phi_min, phi_max = 0, 0#numpy.pi*0.5
         n,theta,phi = [random.choice(n_choices),
                        random.random()*(theta_max-theta_min),
@@ -454,11 +454,11 @@ random_euler_riemann.dat : ASCII file
     f.close()
     return S_prime_list
 if __name__ == "__main__":
-    S_prime_list = test_riemann(1)
+    S_prime_list = test_riemann(100)
 
 
 #    eqn = Euler_UCS(MASA_with_pinned_bounds([[0,1],[0,1],[0,1]],nxes=(100,1,1)))
 #    print eqn.balance_diff()[0]
 #    out = eqn.balance_lambda_init()
-    import pdb;pdb.set_trace()
+#    import pdb;pdb.set_trace()
     
