@@ -433,13 +433,13 @@ random_euler_riemann.dat : ASCII file
     f = open('random_euler_riemann.dat','w')
     f.write('%problem #, theta(deg), phi(deg), '
             +'source_rho, source_p, source_u, source_v, source_w')
-    ranges = [[t,0.1,1],[xi,-1,1],[eta,-1,1]]#,[zeta,-1,1]]
+    ranges = [[t,0.1,1],[xi,-1,1],[eta,-1,1],[zeta,-1,1]]
     random.seed(100)
     S_prime_list = []
     for indn in range(ntests):
         n_choices = [0,1,2,3,4]
         theta_min, theta_max = 0, numpy.pi*0.5
-        phi_min, phi_max = 0, 0#numpy.pi*0.5
+        phi_min, phi_max = 0, numpy.pi*0.5
         n,theta,phi = [random.choice(n_choices),
                        random.random()*(theta_max-theta_min),
                        random.random()*(phi_max-phi_min)]

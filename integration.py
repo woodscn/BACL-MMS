@@ -105,8 +105,9 @@ Attributes
         self.ranges = zip(self.min_ranges,self.max_ranges)
         self.args=args
         self.sympy_variables = self.int_variables
-        self.function = Integrand(
-            sympy_function,self.sympy_variables,args=self.args).ctypesified
+        self.integrand = Integrand(
+            sympy_function,self.sympy_variables,args=self.args)
+        self.function = self.integrand.ctypesified
         self.integrate = self.quad_integrate
         # Unpack sympy_discontinuities into a list of points for nquad.
 
@@ -145,6 +146,7 @@ Attributes
         '''
 Integration using scipy.integrate
 '''
+#        import pdb;pdb.set_trace()
         return nquad(self.function,self.ranges,opts=self.opts)
 
     def mc_integrate(self):
@@ -211,7 +213,7 @@ double integrand_wrapper(int n, double args[n]);
         f = open(filename_prefix+".h",'a')
         f.write(extra_h_code)
         f.close()
-        cmd = ("gcc -dynamiclib -g3 -I. "+filename_prefix+".c -o "
+        cmd = ("gcc -dynamiclib -O3 -I. "+filename_prefix+".c -o "
                +filename_prefix+".dylib")
         subprocess.call(cmd,shell=True)
         self.ctypeslib = ctypes.CDLL(filename_prefix+'.dylib')
@@ -223,7 +225,7 @@ double integrand_wrapper(int n, double args[n]);
                                      len(self.sympy_variables)*ctypes.c_double)
         
         test = []
-        for indx in range(10):
+        for indx in range(0):
             randargs = [random.random() for item in self.sympy_variables]
             temp = (self.lambdified(*randargs)-
                     self.ctypesified(
