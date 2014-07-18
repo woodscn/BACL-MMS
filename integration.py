@@ -1,5 +1,11 @@
+import os
+import subprocess
+import ctypes
+import random
 import sympy
+import numpy
 from sympy.utilities.lambdify import lambdify
+from sympy.utilities.codegen import codegen
 from sympy.core.cache import clear_cache
 from scipy.integrate import nquad
 H = sympy.special.delta_functions.Heaviside
@@ -8,7 +14,6 @@ from functools import partial
 def list_integral(integrands,**kwargs):
     """
 Map numeric integration to a list of symbolic integrands.
-
 Numerically integrate a list of symbolic integrands over a single range and 
 with a single set of integration options. 
 This is a good spot to implement multiprocessing using Python's 
@@ -101,7 +106,7 @@ Attributes
         self.args=args
         self.sympy_variables = self.int_variables
         self.function = Integrand(
-            sympy_function,self.sympy_variables,args=self.args).lambdified
+            sympy_function,self.sympy_variables,args=self.args).ctypesified
         self.integrate = self.quad_integrate
         # Unpack sympy_discontinuities into a list of points for nquad.
 
@@ -168,26 +173,78 @@ class Integrand(object):
         self.sympy_variables = sympy_variables
         self.lambdified = lambdify(self.sympy_variables,self.sympy_function)
         clear_cache()
-# # Enable the use of ctypes objects in nquad, once multivariate ctypes objects
-# # are appropriate arguments for the QUADPACK library functions.
-#        self.generated_code = codegen(
-#            ('integrand',self.sympy_function),'C','integrand',
-#            argument_sequence=self.sympy_variables,to_files=True)
-#        cmd = "gcc -dynamiclib -I. integrand.c -o testlib.dylib"
-#        subprocess.call(cmd,shell=True)
-#        self.ctypeslib = ctypes.CDLL('./testlib.dylib')
-#        self.ctypesified = self.ctypeslib.integrand
-#        self.ctypesified.argtypes = tuple(
-#            [ctypes.c_double for var in self.sympy_variables])
-#        self.ctypesified.restype = ctypes.c_double
+        # I need a unique way to identify the integrand libraries I will be 
+        # generating. id(self) works sort of, but it may or may not be unique
+        # I think. I'm going to try a hash of the underlying sympy function,
+        # but I can't allow negative numbers (C gets confused), so I have to 
+        # generate a positive integer instead. Stackoverflow had this idea:
+        self.unique_id = ctypes.c_size_t(hash(self.sympy_function)).value
+        # stackoverflow.com/questions/18766535/...
+        #   positive-integer-from-python-hash-function
+        filename_prefix = os.path.join(
+            'integrand_libs','integrand'+str(self.unique_id) )
+        libname_prefix = os.path.join(
+            'integrand_libs',''+str(self.unique_id) )
+# Enable the use of ctypes objects in nquad, once multivariate ctypes objects
+# are appropriate arguments for the QUADPACK library functions.
+        self.generated_code = codegen(
+            ('integrand',self.sympy_function),'C',filename_prefix,
+            argument_sequence=self.sympy_variables,to_files=True)
+        args_str = ",".join(["args["+str(ind)+"]" 
+                             for ind in range(len(self.sympy_variables))])
+        extra_c_code="".join([r"""
+double integrand_wrapper(int n, double args[n])
+{
+   return integrand(""",args_str,""");
+
+}
+"""])
+        extra_h_code="""
+
+double integrand_wrapper(int n, double args[n]);
+
+"""
+        
+        f = open(filename_prefix+".c",'a')
+        f.write(extra_c_code)
+        f.close()
+        f = open(filename_prefix+".h",'a')
+        f.write(extra_h_code)
+        f.close()
+        cmd = ("gcc -dynamiclib -g3 -I. "+filename_prefix+".c -o "
+               +filename_prefix+".dylib")
+        subprocess.call(cmd,shell=True)
+        self.ctypeslib = ctypes.CDLL(filename_prefix+'.dylib')
+        self.ctypesified = self.ctypeslib.integrand_wrapper
+        self.ctypesified.restype = ctypes.c_double
+        # Test the reliability of ctypesified function. This should be 
+        # disabled eventually.
+        self.ctypesified.argtypes = (ctypes.c_int,
+                                     len(self.sympy_variables)*ctypes.c_double)
+        
+        test = []
+        for indx in range(10):
+            randargs = [random.random() for item in self.sympy_variables]
+            temp = (self.lambdified(*randargs)-
+                    self.ctypesified(
+                    ctypes.c_int(len(self.sympy_variables)),
+                    (len(self.sympy_variables)*ctypes.c_double)(*randargs)))
+            if temp**2 >.00000001:
+                test.append(temp)
+        if test:
+            raise IntegrationError("Ctypesified and lambdified do not match!")
+        self.ctypesified.argtypes = ctypes.c_int, ctypes.c_double
         return None
     def __call__(self,*args):
         if len(args) != len(self.sympy_variables):
             print 'args = ',args
             print 'sympy_vars = ',self.sympy_variables
             raise Error('invalid argument list given in call to Integrand!')
+        import pdb;pdb.set_trace()
         out = self.lambdified(*args)
-#        out = self.ctypesified(*args)
+        out1 = self.ctypesified(len(args),tuple(args))
+        print out - out1
+        import pdb;pdb.set_trace()
 #        print (out-out2)**2
 #        exit()
         clear_cache()
