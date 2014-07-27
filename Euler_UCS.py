@@ -259,6 +259,7 @@ def riemann_problem_case(n,theta,phi):
         piecewise_args.append((prim[5],True))
         sol_list.append(sympy.Piecewise(*piecewise_args))
     solution_state = sol_list+base_state
+    import pdb;pdb.set_trace()
     out = {'sol':sympy.Matrix(solution_state),
            'discontinuities':[S-speed for speed in speeds]}
 #    import matplotlib.pyplot as plt
@@ -431,13 +432,15 @@ random_euler_riemann.dat : ASCII file
     Contains solution parameters and corresponding source term values.
 """
     f = open('random_euler_riemann.dat','w')
+#    f.write('\n')
     f.write('%problem #, theta(deg), phi(deg), '
             +'source_rho, source_p, source_u, source_v, source_w')
     ranges = [[t,0.1,1],[xi,-1,1],[eta,-1,1],[zeta,-1,1]]
     random.seed(100)
     S_prime_list = []
     for indn in range(ntests):
-        n_choices = [0,1,2,3,4]
+        print "Test case #"+str(indn)
+        n_choices = [0,1,2,3]#,4]
         theta_min, theta_max = 0, numpy.pi*0.5
         phi_min, phi_max = 0, numpy.pi*0.5
         n,theta,phi = [random.choice(n_choices),
@@ -454,7 +457,7 @@ random_euler_riemann.dat : ASCII file
     f.close()
     return S_prime_list
 if __name__ == "__main__":
-    S_prime_list = test_riemann(100)
+    S_prime_list = test_riemann(10)
 
 
 #    eqn = Euler_UCS(MASA_with_pinned_bounds([[0,1],[0,1],[0,1]],nxes=(100,1,1)))
