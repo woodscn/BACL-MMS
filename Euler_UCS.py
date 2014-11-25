@@ -380,7 +380,8 @@ Manufactured solution as given in MASA documentation for Euler equations.
     xes = x_f(dx_dxi,grid_vels,x0,dxis)
     return {'vars':[t,xi,eta,zeta],
             'sol':sympy.Matrix(prims+dx_dxi+grid_vels+xes),
-            'discontinuities':[kwargs['shock_position']],'eqn_kwargs':{}}
+            'discontinuities':[sympy.Float(kwargs['shock_position'])],
+            'eqn_kwargs':{}}
 
 def dx_dxi_f(dx_dlambda,dx_dxi_0,t0):
     change = [0 for ind in range(9)]

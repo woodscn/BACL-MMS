@@ -107,7 +107,8 @@ Attributes
         self.sympy_variables = self.int_variables
         self.integrand = Integrand(
             sympy_function,self.sympy_variables,args=self.args)
-        self.function = self.integrand.ctypesified
+        self.function = self.integrand.lambdified
+#        self.function = self.integrand.ctypesified
         self.integrate = self.quad_integrate
         # Unpack sympy_discontinuities into a list of points for nquad.
 
@@ -213,29 +214,29 @@ double integrand_wrapper(int n, double args[n]);
         f = open(filename_prefix+".h",'a')
         f.write(extra_h_code)
         f.close()
-        cmd = ("gcc -dynamiclib -O3 -I. "+filename_prefix+".c -o "
-               +filename_prefix+".dylib")
-        subprocess.call(cmd,shell=True)
-        self.ctypeslib = ctypes.CDLL(filename_prefix+'.dylib')
-        self.ctypesified = self.ctypeslib.integrand_wrapper
-        self.ctypesified.restype = ctypes.c_double
-        # Test the reliability of ctypesified function. This should be 
-        # disabled eventually.
-        self.ctypesified.argtypes = (ctypes.c_int,
-                                     len(self.sympy_variables)*ctypes.c_double)
-        
-        test = []
-        for indx in range(0):
-            randargs = [random.random() for item in self.sympy_variables]
-            temp = (self.lambdified(*randargs)-
-                    self.ctypesified(
-                    ctypes.c_int(len(self.sympy_variables)),
-                    (len(self.sympy_variables)*ctypes.c_double)(*randargs)))
-            if temp**2 >.00000001:
-                test.append(temp)
-        if test:
-            raise IntegrationError("Ctypesified and lambdified do not match!")
-        self.ctypesified.argtypes = ctypes.c_int, ctypes.c_double
+#        cmd = ("gcc -dynamiclib -O3 -I. "+filename_prefix+".c -o "
+#               +filename_prefix+".dylib")
+#        subprocess.call(cmd,shell=True)
+#        self.ctypeslib = ctypes.CDLL(filename_prefix+'.dylib')
+#        self.ctypesified = self.ctypeslib.integrand_wrapper
+#        self.ctypesified.restype = ctypes.c_double
+#        # Test the reliability of ctypesified function. This should be 
+#        # disabled eventually.
+#        self.ctypesified.argtypes = (ctypes.c_int,
+#                                     len(self.sympy_variables)*ctypes.c_double)
+#        
+#        test = []
+#        for indx in range(0):
+#            randargs = [random.random() for item in self.sympy_variables]
+#            temp = (self.lambdified(*randargs)-
+#                    self.ctypesified(
+#                    ctypes.c_int(len(self.sympy_variables)),
+#                    (len(self.sympy_variables)*ctypes.c_double)(*randargs)))
+#            if temp**2 >.00000001:
+#                test.append(temp)
+#        if test:
+#            raise IntegrationError("Ctypesified and lambdified do not match!")
+#        self.ctypesified.argtypes = ctypes.c_int, ctypes.c_double
         return None
     def __call__(self,*args):
         if len(args) != len(self.sympy_variables):
@@ -244,11 +245,9 @@ double integrand_wrapper(int n, double args[n]);
             raise Error('invalid argument list given in call to Integrand!')
         import pdb;pdb.set_trace()
         out = self.lambdified(*args)
-        out1 = self.ctypesified(len(args),tuple(args))
+#        out1 = self.ctypesified(len(args),tuple(args))
         print out - out1
         import pdb;pdb.set_trace()
-#        print (out-out2)**2
-#        exit()
         clear_cache()
         return out
 
