@@ -189,9 +189,12 @@ class Integrand(object):
             'integrand_libs',''+str(self.unique_id) )
 # Enable the use of ctypes objects in nquad, once multivariate ctypes objects
 # are appropriate arguments for the QUADPACK library functions.
-        self.generated_code = codegen(
-            ('integrand',self.sympy_function),'C',filename_prefix,
-            argument_sequence=self.sympy_variables,to_files=True)
+        try:
+            self.generated_code = codegen(
+                ('integrand',self.sympy_function),'C',filename_prefix,
+                argument_sequence=self.sympy_variables,to_files=True)
+        except IOError:
+            import pdb;pdb.set_trace()
         args_str = ",".join(["args["+str(ind)+"]" 
                              for ind in range(len(self.sympy_variables))])
         extra_c_code="".join([r"""

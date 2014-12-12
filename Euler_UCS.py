@@ -360,7 +360,7 @@ Manufactured solution as given in MASA documentation for Euler equations.
             'xy':0,'ay':2.,'fy':sympy.cos,'Ly':100.,
             'xz':0,'az':2.,'fz':sympy.cos,'Lz':100.,
             'xt':0,'at':2.,'ft':sympy.cos,'Lt':100.,
-            'shock_strength':0.,'shock_position':50.}
+            'shock_strength':0.,'shock_position':sympy.Float(50.)}
     if disc:
         kwargs['shock_strength']=1.
     dxes = [1,1,1]
